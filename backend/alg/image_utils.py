@@ -1,6 +1,39 @@
 import numpy as np
 from memoized import memoized
 from skimage.transform.pyramids import pyramid_gaussian
+from skimage.transform import rescale
+
+def stitch(im_series, slice, compact_series=None, factor=1):
+    """
+    Stitch together columns from a given image series along the slice
+         ___________*________
+        |          /        |
+        |         /         |
+        |        /          |
+        |_______/___________|
+               *
+    :param im_series: n X m X {1,3} X k array (k frames)
+    :param slice: (first frame, first column) , (last frame, last col)
+    :return:
+    """
+    factor = 1 if compact_series is None else factor
+    (f_start, c_start), (f_end, c_end) = slice
+    assert f_start <= f_end
+    if f_start == f_end:
+        return im_series[..., f_start]
+    relevant_frames = im_series[..., f_start: f_end]
+    result_image = np.zeros_like(relevant_frames[..., 0])  #todo: What is the result shape? Same as frame 1
+    number_of_frames = f_end - f_start
+    # The follow method uses a trick of rescaling the images for images between frames
+    cols = np.linspace(c_start, c_end, number_of_frames * factor)
+    cols_whole = np.round(cols).astype(np.int)
+    # compact_series = rescale(im_series, (1, 1, 1, factor))
+    compact_series = compact_series if compact_series is not None else  im_series
+    relevant_cols = np.swapaxes(compact_series[::, cols_whole, ::, np.arange(number_of_frames * factor)], 0, 1)
+    result_image[::, cols_whole, ::] = relevant_cols
+    return result_image
+
+
 
 
 def refocus(im_series, depth):
@@ -10,7 +43,12 @@ def refocus(im_series, depth):
     :param depth:
     :return:
     """
-    pass
+    # calculate motion between images
+    # estimate overall size of the expected result image
+    # bring images to be overlapping by padding and moving by the motion vector
+    # move images slightly using depth parameter
+    #return cropped area from result image
+    raise NotImplemented
 
 def calculate_motion(im_series: np.ndarray):
     """
@@ -56,8 +94,9 @@ def estimate_motion(im1: np.ndarray, im2: np.ndarray):
 
     raise NotImplemented
 
+
 @memoized
-def gen_pyramid(im: np.ndarray, max_layer=10):
+def gen_pyramid(im):
     """
     Wrapper for building pyramids with chached outputs.
     Builds a downscale pyramid (im.shape, im.shape/2, im.shape/4, ... , im.shape/(2**max_level)
@@ -66,5 +105,5 @@ def gen_pyramid(im: np.ndarray, max_layer=10):
     :param max_layer:
     :return:
     """
-    return pyramid_gaussian(im, max_layer=max_layer)
+    return pyramid_gaussian(im, max_layer=10)
 

@@ -1,0 +1,101 @@
+#row_controllers{
+    margin-top: 5px;
+}
+
+#buttons_file{
+    align-self: flex-end;
+}
+
+.control_button {
+    float: right;
+    align-self: flex-end;
+
+    margin-left: 2px;
+}
+
+label.input-element-label {
+    float: right;
+}
+
+.input-element-row {
+    padding-bottom: 1%;
+    padding-top: 1%;
+    align-items: center;
+}
+
+#pills-tabContent {
+    margin-top: 1.5rem;
+}
+
+
+#label-step-shift {
+    padding-right: 0;
+}
+
+.input-group-append {
+    padding-left: 0 !important;
+}
+
+.custom-file-label{
+    overflow: hidden;
+}
+
+.col-sm-1{
+    padding: 0 !important;
+}
+
+--primary
+
+/*.form-control-sm{*/
+/*     padding: 0 !important;*/
+/*}*/
+
+#ball{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 10px;
+  left: 10px;
+  background: #0044ff;
+  border-radius: 100%;
+}
+
+/*
+Try dragging the brown circle around. The blue box marks the draggable area of the circle's center.
+
+At the bottom of the JS code, the 'draw' function is called. Try changing the input arguments to see what happens!
+*/
+
+#widget {
+  border: 1px solid black;
+}
+
+#markerbounds {
+  margin: auto;
+  position: relative;
+
+}
+
+#box {
+  margin: auto;
+  background-color: #f1f1f1;
+  position: absolute;
+}
+
+#marker1 {
+  position: relative;
+  background-color: brown;
+  border-radius: 100px;
+}
+
+#marker2 {
+  position: relative;
+  background-color: brown;
+  border-radius: 100px;
+}
+
+#coord {
+  font-family: serif;
+  font-size: 14px;
+  margin: 0px;
+}

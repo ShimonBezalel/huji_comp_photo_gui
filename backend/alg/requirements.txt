@@ -1,1 +1,3 @@
 skimage
+memoized
+numpy

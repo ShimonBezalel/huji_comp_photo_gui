@@ -34,8 +34,6 @@ def stitch(im_series, slice, compact_series=None, factor=1):
     return result_image
 
 
-
-
 def refocus(im_series, depth):
     """
 
@@ -49,6 +47,7 @@ def refocus(im_series, depth):
     # move images slightly using depth parameter
     #return cropped area from result image
     raise NotImplemented
+
 
 def calculate_motion(im_series: np.ndarray):
     """
@@ -66,6 +65,7 @@ def calculate_motion(im_series: np.ndarray):
         im1, im2 = np.squeeze()
         motion_vectors[i] = estimate_motion(im1, im2)
     raise NotImplemented
+
 
 def estimate_motion(im1: np.ndarray, im2: np.ndarray):
     """

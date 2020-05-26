@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Image Editor</title>
+
+  <!-- Bootstrap core CSS -->
+<!--  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
+<!--  <script src="svg-injector.min.js"></script>-->
+
+  <!-- Custom styles for this template -->
+  <link href="css/shop-item.css" rel="stylesheet">
+  <link href="css/gui.css" rel="stylesheet">
+  <link href="node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+<!--  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>-->
+
+
+</head>
+
+<body>
+
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="display: none ">
+    <div class="container">
+      <a class="navbar-brand" href="#">Image Editor</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">Save
+              <span class="sr-only">(current)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Upload</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">About</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+    <div class="modal" id="modal-file-upload" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Upload Image Series</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form>
+          <div class="custom-file">
+            <input type="file" class="custom-file-input" id="customFile" multiple data-show-upload="true" data-show-caption="true">
+            <label class="custom-file-label" for="customFile">Choose files</label>
+          </div>
+        </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="button-upload-save-files">
+              <span class="spinner-border spinner-border-sm"  id="button-upload-save-files-spinner" role="status" aria-hidden="true" style="display: none"></span>
+            Save changes
+          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" id="button-upload-close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row" id="row_controllers">
+      <div class="col-lg-5">
+        <!-- Input tabs go here-->
+        <ul class="nav nav-pills nav-fill" id="featureTabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link"  id="motion-tab" role="tab" data-toggle="pill" href="#motion-pane" aria-controls="motion-pane" aria-selected="true">Motion</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="focus-tab" role="tab" data-toggle="pill" href="#focus-pane" aria-controls="focus-pane" aria-selected="false">Focus</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="viewpoint-tab" role="tab" data-toggle="pill" href="#viewpoint-pane" aria-controls="viewpoint-pane" aria-selected="false">Viewpoint</a>
+          </li>
+        </ul>
+
+      </div>
+
+      <div class="col-lg-7" id="buttons_file">
+        <button type="button" class="btn btn-primary control_button">Save</button>
+        <button id="file-button-upload" type="button" class="btn btn-secondary control_button">Upload</button>
+
+        <!-- Save / Load buttons go here-->
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-5">
+        <div class="tab-content" id="pills-tabContent">
+          <div class="tab-pane fade show active" id="motion-pane" role="tabpanel" aria-labelledby="motion-tab">
+            <p>
+              Lorem
+            </p>
+          </div>
+          <div class="tab-pane fade" id="focus-pane" role="tabpanel" aria-labelledby="focus-tab">
+            <div id="input_elements_focus">
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label for="slider-focus" class="input-element-label">Focus</label>
+                </div>
+                <div class="col-sm-2">
+<!--                  <span class="oi oi-camera-slr"></span>-->
+                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                </div>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" id="slider-focus" min="0" max="1" step="0.1" >
+                </div>
+                <div class="col-sm-2">
+                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                </div>
+
+              </div>
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label class="input-element-label" id="label-direct-focus" for="step-focus">Direct</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" type="number" step="0.002" id="direct-focus">
+                </div>
+                <div class="col-sm-7">
+                  <div class="input-group">
+                    <input type="text" class="form-control" aria-label="Text input with dropdown button" placeholder="+ New Preset">
+                    <div class="input-group-append">
+                      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                      <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">Example 1</a>
+                        <a class="dropdown-item" href="#">Example 2</a>
+                        <a class="dropdown-item" href="#">Example 3</a>
+                        <div role="separator" class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Erase All</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+              </div>
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label class="input-element-label ">Step</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="step-focus" type="number" step="0.002" value="0.1">
+                </div>
+
+              </div>
+
+
+            </div>
+
+          </div>
+          <div class="tab-pane fade" id="viewpoint-pane" role="tabpanel" aria-labelledby="viewpoint-tab">
+            <div id="input_elements_shift">
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label for="slider-shift" class="input-element-label">Shift</label>
+                </div>
+                <div class="col-sm-2">
+                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                </div>
+                <div class="col-sm-7">
+                  <div id="widget">
+                    <div id="markerbounds">
+                      <div id="box">
+                        <div id="marker1"></div>
+                        <div id="marker2"></div>
+<!--                        <svg height="210" width="500">-->
+<!--                          <line id="slice-line" x1="0" y1="0" x2="200" y2="200" style="stroke:rgb(255,0,0);stroke-width:2" />-->
+<!--                        </svg>-->
+
+                      </div>
+                    </div>
+                    <div>
+                      <p id="coord"></p>
+                    </div>
+                  </div>
+
+<!--                  <input type="range" multiple value="10,80" />-->
+                  <input type="range" class="custom-range " id="slider-shift" min="0" max="1"   >
+                </div>
+                <div class="col-sm-2">
+                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                </div>
+
+              </div>
+
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label class="input-element-label col-form-label-sm" for="direct-shift">Direct</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="direct-shift" type="number" >
+                </div>
+                <div class="col-sm-4">
+                  <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" aria-label="Text input with dropdown button" placeholder="+ New Preset">
+                    <div class="input-group-append" id="direct-input-dropdown-shift">
+                      <button class="btn btn-outline-secondary dropdown-toggle form-control-sm" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                      <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">Example 1</a>
+                        <a class="dropdown-item" href="#">Example 2</a>
+                        <a class="dropdown-item" href="#">Example 3</a>
+                        <div role="separator" class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Erase All</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-1">
+                  <label class="input-element-label col-form-label-sm" for="step-shift" id="label-step-shift">Step</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="step-shift" type="number" step="0.002" min="0.00001" max="0.05" value="0.1">
+                </div>
+
+
+
+              </div>
+
+
+
+            </div>
+            <hr/>
+            <div id="input_elements_move">
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label for="slider-move" class="input-element-label">Move</label>
+                </div>
+                <div class="col-sm-2">
+
+                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                </div>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" id="slider-move" min="-1" max="1"   >
+                </div>
+                <div class="col-sm-2">
+                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                </div>
+
+              </div>
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label class="input-element-label col-form-label-sm" for="direct-move">Direct</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="direct-move" type="number" >
+                </div>
+                <div class="col-sm-4">
+                  <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" aria-label="Text input with dropdown button" placeholder="+ New Preset">
+                    <div class="input-group-append" id="direct-input-dropdown-move">
+                      <button class="btn btn-outline-secondary dropdown-toggle form-control-sm" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                      <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">Example 1</a>
+                        <a class="dropdown-item" href="#">Example 2</a>
+                        <a class="dropdown-item" href="#">Example 3</a>
+                        <div role="separator" class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Erase All</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-1">
+                  <label class="input-element-label col-form-label-sm" for="step-move" id="label-step-move">Step</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="step-move" type="number" step="0.002"  min="0.00001" max="0.05" value="0.1">
+                </div>
+
+
+              </div>
+
+          </div>
+            <hr/>
+
+            <div id="input_elements_stereo">
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label for="slider-stereo" class="input-element-label">Stereo</label>
+                </div>
+                <div class="col-sm-2">
+
+                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                </div>
+                <div class="col-sm-7">
+                  <input type="range" class="custom-range" id="slider-stereo" min="-1" max="1"   >
+                </div>
+                <div class="col-sm-2">
+                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                </div>
+
+              </div>
+
+              <div class="row input-element-row">
+                <div class="col-sm-1">
+                  <label class="input-element-label col-form-label-sm" for="direct-stereo">Direct</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="direct-stereo" type="number" step="0.1">
+                </div>
+                <div class="col-sm-4">
+                  <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" aria-label="Text input with dropdown button" placeholder="+ New Preset">
+                    <div class="input-group-append" id="direct-input-dropdown-stereo">
+                      <button class="btn btn-outline-secondary dropdown-toggle form-control-sm" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                      <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#">Example 1</a>
+                        <a class="dropdown-item" href="#">Example 2</a>
+                        <a class="dropdown-item" href="#">Example 3</a>
+                        <div role="separator" class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Erase All</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-sm-1">
+                  <label class="input-element-label col-form-label-sm" for="step-stereo" id="label-step-stereo">Step</label>
+                </div>
+                <div class="col-sm-3">
+                  <input class="form-control form-control-sm" id="step-stereo" type="number" step="0.002"  min="0.00001" max="0.05" value="0.1">
+                </div>
+
+
+              </div>
+              <div class="row input-element-row">
+
+            </div>
+
+          </div>
+
+         </div>
+        </div>
+
+      </div>
+      <!-- /.col-lg-3 -->
+
+      <div class="col-lg-7">
+
+        <div class="card mt-4">
+          <img class="card-img-top img-fluid" src="http://placehold.it/900x400" alt="">
+          <div class="card-body">
+
+          </div>
+        </div>
+        <!-- /.card -->
+
+
+      </div>
+      <!-- /.col-lg-9 -->
+
+    </div>
+    <div class="row">
+      <div class="col">
+        <img src="https://via.placeholder.com/1200x180" class="img-fluid rounded" alt="Responsive image">
+      </div>
+    </div>
+  </div>
+  <!-- /.container -->
+
+  <!-- Footer -->
+  <footer class="py-5 bg-dark">
+    <div class="container">
+      <p class="m-0 text-center text-white">Copyright &copy; Your Website 2019</p>
+    </div>
+    <!-- /.container -->
+  </footer>
+
+  <!-- Bootstrap core JavaScript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+<!--  <script src="vendor/jquery/jquery.min.js"></script>-->
+<!--  <script type="js" src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>-->
+
+  <script src="src/controller.js"></script>
+
+
+</body>
+
+</html>

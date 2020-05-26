@@ -17,9 +17,10 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.urls import path
 
-from backend.views import test
+from backend import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    url(r'test.*$', test),
+    url(r'test.*$', views.test),
+    url(r'upload_images.*$',views.upload_images ),
 ]

@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     url(r'test.*$', views.test),
     url(r'upload_images.*$', views.upload_images),
-    url(r'focus.*$', views.focus_image),
+    url(r'focus.*$', views.focus),
     url(r'viewpoint.*$', views.viewpoint),
     url(r'motion.*$', views.motion),
 ]

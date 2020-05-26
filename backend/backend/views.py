@@ -46,24 +46,43 @@ def upload_images(request):
 #     return HttpResponse('')
 
 
-def focus_image(request):
+def focus(request):
     try:
         value = request.GET.get('value')
         path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE001.jpg')
         with open(path, "rb") as f:
-            return HttpResponse({'image': f.read()}, content_type="image/jpeg")
+            return HttpResponse(f.read(), content_type="image/jpeg")
 
     # load images to director
     except:
         response = HttpResponse('')
         response.status_code = 400
         return response
-    return HttpResponse('')
 
 
 def viewpoint(request):
-    return None
+    try:
+        shift_start = request.GET.get('shift_start')
+        shift_end = request.GET.get('shift_end')
+        move = request.GET.get('move')
+        stereo = request.GET.get('stereo')
+        path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE001.jpg')
+        with open(path, "rb") as f:
+            return HttpResponse(f.read(), content_type="image/jpeg")
+
+    # load images to director
+    except:
+        response = HttpResponse('')
+        response.status_code = 400
+        return response
 
 
 def motion(request):
-    return None
+    try:
+        return HttpResponse()
+
+    # load images to director
+    except:
+        response = HttpResponse('')
+        response.status_code = 400
+        return response

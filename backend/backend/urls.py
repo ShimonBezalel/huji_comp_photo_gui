@@ -22,5 +22,6 @@ from backend import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     url(r'test.*$', views.test),
-    url(r'upload_images.*$',views.upload_images ),
+    url(r'upload_images.*$', views.upload_images),
+    url(r'focus_image.*$', views.upload_images),
 ]

@@ -1,3 +1,4 @@
 skimage
 memoized
 numpy
+django

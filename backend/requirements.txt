@@ -1,4 +1,4 @@
-skimage
-memoized
+scikit-image
 numpy
 django
+django-cors-headers-3.3.0

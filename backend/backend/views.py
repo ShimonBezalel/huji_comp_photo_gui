@@ -13,7 +13,8 @@ def upload_images(request):
     file = request.FILES["images"]
 
     try:
-        pass
+        if not file:
+            raise ValueError
     # load images to directory
     except:
         response = HttpResponse('')

@@ -4,6 +4,13 @@ const SLOW_STEP = 0.05;
 
 const API_GATEWAY = "https://example.com";
 
+fetch('https://jsonplaceholder.typicode.com/todos/1')
+  .then(response => response.json())
+  .then(json => console.log(json));
+
+
+
+
 function addEvent(element, eventName, callback) {
     if (element.addEventListener) {
         element.addEventListener(eventName, callback, false);

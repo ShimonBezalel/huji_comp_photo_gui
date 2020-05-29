@@ -2,9 +2,43 @@ import numpy as np
 from memoized import memoized
 from skimage.transform.pyramids import pyramid_gaussian
 from skimage.transform import rescale
+import os
+import time
+from matplotlib import pyplot as plt
+from scipy.interpolate import interp1d
+
+FACTOR_MAX = 2
+FACTOR_MIN = 0.7
 
 
-def stitch(im_series, slice, compact_series=None, factor=1):
+def open_series(path, suffix="", extension="jpg"):
+    for root, dirs, files in os.walk(path):
+        k = len(files)
+        file_format = "{}{:03d}.{}" if k > 100 else "{}{:02d}.{}"
+        t = time.time()
+        all_images = [plt.imread(os.path.join(path, file_format.format(suffix, i, extension)), format=extension)
+                      for i in range(1, k+1)]
+        print("Read {} images in {} s".format(k, time.time() - t))
+        im_series = np.stack(all_images, axis=-1)
+        im_series = im_series / np.max(im_series)
+        return im_series
+
+
+@memoized
+def estimate_factor(m, delta):
+
+
+    # (_, c_start), (_, c_end) = slice
+    # m = shape[1]
+    # delta = c_end - c_start
+
+    factorize = interp1d((-(m-1), m-1), (FACTOR_MIN, FACTOR_MAX))
+
+    return factorize(delta)
+
+
+
+def stitch(im_series, slice, factor=1):
     """
     Stitch together columns from a given image series along the slice
          ___________*________
@@ -14,23 +48,25 @@ def stitch(im_series, slice, compact_series=None, factor=1):
         |_______/___________|
                *
     :rtype: np.ndarray 2D image
-    :param compact_series:
     :param factor:
     :return:
     :param im_series: n X m X {1,3} X k array (k frames)
     :param slice: (first frame, first column) , (last frame, last col)
     :return:
     """
-    factor = 1 if compact_series is None else factor
     (f_start, c_start), (f_end, c_end) = slice
+    factor = estimate_factor(im_series.shape[1], c_end - c_start)  # todo: What is the result shape? Same as frame 1
     assert f_start <= f_end
     if f_start == f_end:
         return im_series[..., f_start]
-    # relevant_frames = im_series[..., f_start: f_end]
-    result_image = np.zeros_like(im_series[..., 0])  # todo: What is the result shape? Same as frame 1
     number_of_frames = f_end - f_start
+    number_of_columns = c_end - c_start
+
+    input_image_shape = im_series[..., 0].shape
+    result_shape = (input_image_shape[0], int(max(number_of_frames, number_of_columns) * factor), input_image_shape[2])
+    result_image = np.zeros(shape=result_shape)
     # The follow method uses a trick of rescaling the images for images between frames
-    cols = np.linspace(c_start, c_end, number_of_frames * factor)  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
+    cols = np.linspace(c_start, c_end, result_shape[1])  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
 
     cols_right = np.floor(cols).astype(np.int)  # ie [ 2, 2, 2, 3 , ...]
     cols_right_weights = cols - cols_right  # ie [ 0.3, 0.4, 0.9, 0.2 , ...]
@@ -38,12 +74,11 @@ def stitch(im_series, slice, compact_series=None, factor=1):
     cols_left = np.ceil(cols).astype(np.int)  # ie [ 3, 3, 3, 4 , ...]
     cols_left_weights = 1 - cols_right_weights  # ie [ 0.7, 0.6, 0.1, 0.8 , ...]
 
-    compact_series = compact_series if compact_series is not None else im_series
-    pixels_right = compact_series[::, cols_right, ::, np.round(
-            np.linspace(f_start, f_end, number_of_frames * factor)).astype(np.int)]
-    pixels_left = compact_series[::, cols_left, ::, np.round(
-            np.linspace(f_start, f_end, number_of_frames * factor)).astype(np.int)]
-    result_image[::, cols_right, ::] = np.swapaxes(
+    pixels_right = im_series[::, cols_right, ::, np.round(
+            np.linspace(f_start, f_end, result_shape[1])).astype(np.int)]
+    pixels_left = im_series[::, cols_left, ::, np.round(
+            np.linspace(f_start, f_end, result_shape[1])).astype(np.int)]
+    result_image[::, np.arange(result_shape[1]), ::] = np.swapaxes(
         pixels_right * cols_right_weights[..., np.newaxis, np.newaxis] +
         pixels_left * cols_left_weights[..., np.newaxis, np.newaxis], 0, 1)
     return result_image

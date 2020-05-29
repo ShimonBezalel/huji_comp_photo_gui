@@ -4,15 +4,19 @@ from django.views.decorators.csrf import csrf_exempt
 import os
 
 from backend.settings import BASE_DIR
+import random
 
 
 def test(request):
     return HttpResponse("<html><body>Reached test!</body></html>")
 
 
+
+
 @csrf_exempt
 def upload_images(request):
     file = request.FILES["images"]
+
     try:
         if not file:
             raise ValueError
@@ -49,9 +53,10 @@ def upload_images(request):
 def focus_image(request):
     try:
         value = request.GET.get('value')
-        path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE001.jpg')
+        value = float(value)
+        path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE{:03d}.jpg'.format(int(value * 200)))
         with open(path, "rb") as f:
-            return HttpResponse({'image': f.read()}, content_type="image/jpeg")
+            return HttpResponse(f.read(), content_type="image/jpeg")
 
     # load images to director
     except:

@@ -3,6 +3,7 @@ from memoized import memoized
 from skimage.transform.pyramids import pyramid_gaussian
 from skimage.transform import rescale
 
+
 def stitch(im_series, slice, compact_series=None, factor=1):
     """
     Stitch together columns from a given image series along the slice
@@ -12,6 +13,10 @@ def stitch(im_series, slice, compact_series=None, factor=1):
         |        /          |
         |_______/___________|
                *
+    :rtype: np.ndarray 2D image
+    :param compact_series:
+    :param factor:
+    :return:
     :param im_series: n X m X {1,3} X k array (k frames)
     :param slice: (first frame, first column) , (last frame, last col)
     :return:
@@ -21,16 +26,26 @@ def stitch(im_series, slice, compact_series=None, factor=1):
     assert f_start <= f_end
     if f_start == f_end:
         return im_series[..., f_start]
-    relevant_frames = im_series[..., f_start: f_end]
-    result_image = np.zeros_like(relevant_frames[..., 0])  #todo: What is the result shape? Same as frame 1
+    # relevant_frames = im_series[..., f_start: f_end]
+    result_image = np.zeros_like(im_series[..., 0])  # todo: What is the result shape? Same as frame 1
     number_of_frames = f_end - f_start
     # The follow method uses a trick of rescaling the images for images between frames
-    cols = np.linspace(c_start, c_end, number_of_frames * factor)
-    cols_whole = np.round(cols).astype(np.int)
-    # compact_series = rescale(im_series, (1, 1, 1, factor))
-    compact_series = compact_series if compact_series is not None else  im_series
-    relevant_cols = np.swapaxes(compact_series[::, cols_whole, ::, np.arange(number_of_frames * factor)], 0, 1)
-    result_image[::, cols_whole, ::] = relevant_cols
+    cols = np.linspace(c_start, c_end, number_of_frames * factor)  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
+
+    cols_right = np.floor(cols).astype(np.int)  # ie [ 2, 2, 2, 3 , ...]
+    cols_right_weights = cols - cols_right  # ie [ 0.3, 0.4, 0.9, 0.2 , ...]
+
+    cols_left = np.ceil(cols).astype(np.int)  # ie [ 3, 3, 3, 4 , ...]
+    cols_left_weights = 1 - cols_right_weights  # ie [ 0.7, 0.6, 0.1, 0.8 , ...]
+
+    compact_series = compact_series if compact_series is not None else im_series
+    pixels_right = compact_series[::, cols_right, ::, np.round(
+            np.linspace(f_start, f_end, number_of_frames * factor)).astype(np.int)]
+    pixels_left = compact_series[::, cols_left, ::, np.round(
+            np.linspace(f_start, f_end, number_of_frames * factor)).astype(np.int)]
+    result_image[::, cols_right, ::] = np.swapaxes(
+        pixels_right * cols_right_weights[..., np.newaxis, np.newaxis] +
+        pixels_left * cols_left_weights[..., np.newaxis, np.newaxis], 0, 1)
     return result_image
 
 
@@ -45,7 +60,7 @@ def refocus(im_series, depth):
     # estimate overall size of the expected result image
     # bring images to be overlapping by padding and moving by the motion vector
     # move images slightly using depth parameter
-    #return cropped area from result image
+    # return cropped area from result image
     raise NotImplemented
 
 
@@ -59,8 +74,8 @@ def calculate_motion(im_series: np.ndarray):
     assert k >= 2, "Motion is computed for at least 2 images, received {}.".format(k)
     # if c == 3:
     # reduce to grayscale images
-    grayscale_series = np.squeeze(im_series)   # shape =  n X m X k
-    motion_vectors = np.zeros(shape=(k-1, 2))
+    grayscale_series = np.squeeze(im_series)  # shape =  n X m X k
+    motion_vectors = np.zeros(shape=(k - 1, 2))
     for i in range(k):
         im1, im2 = np.squeeze()
         motion_vectors[i] = estimate_motion(im1, im2)
@@ -106,4 +121,3 @@ def gen_pyramid(im):
     :return:
     """
     return pyramid_gaussian(im, max_layer=10)
-

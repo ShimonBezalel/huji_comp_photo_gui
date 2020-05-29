@@ -1,4 +1,5 @@
 scikit-image
+memoized
 numpy
 django
-django-cors-headers-3.3.0
+django-cors-headers==3.3.0

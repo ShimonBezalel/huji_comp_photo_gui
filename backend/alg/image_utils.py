@@ -1,14 +1,20 @@
 import numpy as np
 from memoized import memoized
 from skimage.transform.pyramids import pyramid_gaussian
-from skimage.transform import rescale
+from skimage.transform import rescale, resize
 import os
 import time
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
+from skimage.registration import optical_flow_tvl1
+from skimage.color import rgb2gray
+import cv2
 
 FACTOR_MAX = 2
 FACTOR_MIN = 0.7
+
+DEBUG = True
+
 
 
 def open_series(path, suffix="", extension="jpg"):
@@ -84,7 +90,7 @@ def stitch(im_series, slice, factor=1):
     return result_image
 
 
-def refocus(im_series, depth):
+def refocus(im_series, depth, motion_vectors=None):
     """
 
     :param im_series:
@@ -92,57 +98,157 @@ def refocus(im_series, depth):
     :return:
     """
     # calculate motion between images
+    if not motion_vectors:
+        motion_vectors = calculate_motion(im_series)
+
     # estimate overall size of the expected result image
     # bring images to be overlapping by padding and moving by the motion vector
     # move images slightly using depth parameter
+    res = np.squeeze(np.median(im_series, axis=-1))
     # return cropped area from result image
-    raise NotImplemented
+    return res
 
 
-def calculate_motion(im_series: np.ndarray):
+def rgb2gray_series(series):
+    """
+    Coverts an image series to gray
+    :param series:
+    :return:
+    """
+    s = np.swapaxes(series, 2, 3)
+    as_gray = rgb2gray(s)
+    return as_gray
+
+
+def calculate_motion(im_series):
     """
     Returns a list of vectors of motion between each image. For k images, we will get k-1 2D vectors
     :param im_series: n X m X {1, 3} X k Array - k frames of n X m images, where the images can be grayscale or 3 channels
     :return: Array of shape (k-1, 2)
     """
-    m, n, c, k = im_series.shape
+    if len(im_series.shape) == 3:
+        m, n, k = im_series.shape
+        gray_series = im_series
+
+    elif len(im_series.shape) == 4:
+        m, n, c, k = im_series.shape
+        if c == 3:
+            gray_series = rgb2gray_series(im_series)  # shape =  n X m X k
+        elif c == 1:
+            gray_series = np.squeeze(im_series)
+        else:
+            raise ValueError("Mis-aligned series shape {}. Must have 1 or 3 channels".format(im_series.shape))
+
+    else:
+        raise ValueError("Wrong shape for image series {}".format(im_series.shape))
+
     assert k >= 2, "Motion is computed for at least 2 images, received {}.".format(k)
-    # if c == 3:
-    # reduce to grayscale images
-    grayscale_series = np.squeeze(im_series)  # shape =  n X m X k
-    motion_vectors = np.zeros(shape=(k - 1, 2))
-    for i in range(k):
-        im1, im2 = np.squeeze()
-        motion_vectors[i] = estimate_motion(im1, im2)
-    raise NotImplemented
+
+    pyramid = tuple(pyramid_gaussian(gray_series, multichannel=True, downscale=2))
+    relevant_levels = list(reversed(range(len(pyramid) - 4)))
+
+    interim_results = []
+    for level in relevant_levels:
+        series : np.ndarray = pyramid[level]
+        motion_vectors = np.zeros(shape=(k - 1, 2))
+        base_im = series[..., 0]
+        for frame_i in range(k - 1):
+            moved_im = series[..., frame_i + 1]
+            # im1, im2 = series[..., frame_i], series[..., frame_i + 1]
+            flow = optical_flow_tvl1(base_im, moved_im)  # returns shape 2, m, n
+
+            # range for bins edges [[x_min, x_max], y_min, y_max]]
+            limit_range = np.array([np.min(flow, axis=(1, 2)), np.max(flow, axis=(1, 2))]).transpose()
+            if DEBUG:
+                plt.hist2d(flow[0].flatten(), flow[1].flatten(), bins=10, range=limit_range)
+                plt.show()
+                continue
+
+            hist, x_edges, y_edges = np.histogram2d(flow[0].flatten(), flow[1].flatten(), bins=100, range=limit_range)
+            i, j = np.unravel_index(np.argmax(hist), hist.shape)
+
+            x_val = (x_edges[i] + x_edges[i+1]) / 2  # mid-range in bin
+            y_val = (y_edges[j] + y_edges[j+1]) / 2  # mid-range in bin
+
+            motion_vectors[frame_i] = [x_val, y_val]
+        normalized_vec = motion_vectors * (2 ** level)
+        if interim_results:
+            prev_results = interim_results[-1]
+            m_prev, m_new = np.mean(prev_results, axis=0), np.mean(normalized_vec, axis=0)
+            print(np.abs(m_new - m_prev))
+            if almost_equal(m_prev, m_new):
+                return motion_vectors
+
+        interim_results.append(normalized_vec)
+    return interim_results[-1]
 
 
-def estimate_motion(im1: np.ndarray, im2: np.ndarray):
+def calculate_motion2(im_series):
     """
-    Receives two images 2D grayscale images of similar shape and estimates motion vector between them. Assume vector is
-    2D with only translation and rotation.
-    :param im1, im2: Images of shape n X m
-    :return:
+    Returns a list of vectors of motion between each image. For k images, we will get k-1 2D vectors
+    :param im_series: n X m X {1, 3} X k Array - k frames of n X m images, where the images can be grayscale or 3 channels
+    :return: Array of shape (k-1, 2)
     """
-    assert im1.shape == im2.shape, "Images must have the same shape. {} != {}".format(im1.shape, im2.shape)
-    assert im1.shape.__len__() == 2, "Images must have shape nXm, got {}".format(im1.shape)
-    # Build Laplacian (pyramid of downscaled images)
-    # chache interim results (use the same images twice per caluclation)
-    pyrm1, pyrm2 = gen_pyramid(im1), gen_pyramid(im1)
+    if len(im_series.shape) == 3:
+        m, n, k = im_series.shape
+        gray_series = im_series
 
-    # for each level in the pyramid:
-    # Find optical flow using lucas canade
+    elif len(im_series.shape) == 4:
+        m, n, c, k = im_series.shape
+        if c == 3:
+            gray_series = rgb2gray_series(im_series)  # shape =  n X m X k
+        elif c == 1:
+            gray_series = np.squeeze(im_series)
+        else:
+            raise ValueError("Mis-aligned series shape {}. Must have 1 or 3 channels".format(im_series.shape))
 
-    # Assuming the transform is uniform in the image (no moving parts) we can vote for the best motion vector
-    # Build (2D) histogram of vectors, wisely using the min/max as bucket ends.
+    else:
+        raise ValueError("Wrong shape for image series {}".format(im_series.shape))
 
-    # Find vector with highest votes as motion vector.
+    assert k >= 2, "Motion is computed for at least 2 images, received {}.".format(k)
 
-    # if this vector matches last iteration's motion, you can return it as the best candidate
+    pyramid = tuple(pyramid_gaussian(gray_series, multichannel=True, downscale=2))
+    relevant_levels = list(reversed(range(len(pyramid) - 4)))
+    print(relevant_levels)
 
-    # if finished iterating the pyramid, return last vector
+    interim_results = []
+    r = []
+    for level in relevant_levels:
+        print("LEVEL {}".format(level))
+        series : np.ndarray = pyramid[level]
+        base_im = series[..., 0]
+        medians = np.zeros((2, k-1))
+        flows = np.zeros((2, ) + base_im.shape + (k-1,))
+        for frame_i in range(1, k):
+            other_im = series[..., frame_i]
+            flow = optical_flow_tvl1(base_im, other_im)  # returns shape 2, m, n
+            flow *= (2 ** level)  # normalize to base resolution
+            m = np.median(flow, axis=(1, 2))
+            medians[..., frame_i-1] = m
+            flows[..., frame_i-1] = flow
+        if interim_results:
+            m_prev = interim_results[-1]
+            a_m, a_m_p = np.average(medians, axis=1), np.average(m_prev, axis=1)
+            print(a_m, a_m_p, np.abs(a_m - a_m_p))
+            if almost_equal(a_m, a_m_p):
+                r.append(resize(flows, output_shape=(2,) + tuple(np.array(gray_series.shape) - [0,0,1])))
+        interim_results.append(medians)
+    return r
 
-    raise NotImplemented
+            # motion_vectors[frame_i] = [x_val, y_val]
+        # if interim_results:
+        #     prev_results = interim_results[-1]
+        #     m_prev, m_new = np.mean(prev_results, axis=0), np.mean(normalized_vec, axis=0)
+        #     print(np.abs(m_new - m_prev))
+        #     if almost_equal(m_prev, m_new):
+        #         return motion_vectors
+        #
+        # interim_results.append(normalized_vec)
+    # return interim_results[-1]
+
+def almost_equal(v1, v2, tolerance=0.1):
+    d = np.abs(v1 - v2)
+    return np.all(d < tolerance)
 
 
 @memoized

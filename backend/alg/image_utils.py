@@ -8,10 +8,11 @@ from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
 from skimage.registration import optical_flow_tvl1
 from skimage.color import rgb2gray
+
 import cv2
 
-FACTOR_MAX = 2
-FACTOR_MIN = 0.7
+FACTOR_MAX = 10
+FACTOR_MIN = 1
 
 DEBUG = True
 
@@ -31,20 +32,24 @@ def open_series(path, suffix="", extension="jpg"):
 
 
 @memoized
-def estimate_factor(m, delta):
+def estimate_factor(m, delta_frames, delta_cols):
 
 
     # (_, c_start), (_, c_end) = slice
     # m = shape[1]
     # delta = c_end - c_start
 
-    factorize = interp1d((-(m-1), m-1), (FACTOR_MIN, FACTOR_MAX))
+    factorize = interp1d((0, (m / 2) + 1), (FACTOR_MIN, FACTOR_MAX))
 
-    return factorize(delta)
+    f = factorize(np.abs(delta_cols / delta_frames))
+    if delta_cols < 0:
+        f = 1/f
+    return f
 
 
 
-def stitch(im_series, slice, factor=1):
+
+def stitch(im_series, slice, avg_motion=3):
     """
     Stitch together columns from a given image series along the slice
          ___________*________
@@ -61,36 +66,37 @@ def stitch(im_series, slice, factor=1):
     :return:
     """
     (f_start, c_start), (f_end, c_end) = slice
-    factor = estimate_factor(im_series.shape[1], c_end - c_start)  # todo: What is the result shape? Same as frame 1
-    assert f_start <= f_end
+
     if f_start == f_end:
         return im_series[..., f_start]
+    assert f_start < f_end
+    factor = estimate_factor(im_series.shape[1], f_end - f_start, c_end - c_start)  # todo: What is the result shape? Same as frame 1
+    slice_width = np.abs(np.round(avg_motion * factor))
     number_of_frames = f_end - f_start
     number_of_columns = c_end - c_start
 
     input_image_shape = im_series[..., 0].shape
-    result_shape = (input_image_shape[0], int(max(number_of_frames, number_of_columns) * factor), input_image_shape[2])
+    # result_shape = (input_image_shape[0], int(max(number_of_frames, number_of_columns) * factor), input_image_shape[2])
+    result_shape = (input_image_shape[0], int(number_of_frames * slice_width), input_image_shape[2])
     result_image = np.zeros(shape=result_shape)
-    # The follow method uses a trick of rescaling the images for images between frames
     cols = np.linspace(c_start, c_end, result_shape[1])  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
-
-    cols_right = np.floor(cols).astype(np.int)  # ie [ 2, 2, 2, 3 , ...]
+    cols_right = np.ceil(cols).astype(np.int)  # ie [ 3, 3, 3, 4 , ...]
     cols_right_weights = cols - cols_right  # ie [ 0.3, 0.4, 0.9, 0.2 , ...]
 
-    cols_left = np.ceil(cols).astype(np.int)  # ie [ 3, 3, 3, 4 , ...]
+    cols_left = np.floor(cols).astype(np.int) # ie [ 2, 2, 2, 3 , ...]
     cols_left_weights = 1 - cols_right_weights  # ie [ 0.7, 0.6, 0.1, 0.8 , ...]
 
-    pixels_right = im_series[::, cols_right, ::, np.round(
-            np.linspace(f_start, f_end, result_shape[1])).astype(np.int)]
-    pixels_left = im_series[::, cols_left, ::, np.round(
-            np.linspace(f_start, f_end, result_shape[1])).astype(np.int)]
+    frame_indices = np.repeat(np.arange(f_start, f_end)[..., np.newaxis], slice_width, axis=-1).flatten()
+
+    pixels_right = im_series[::, cols_right, ::, frame_indices]
+    pixels_left = im_series[::, cols_left.reshape(frame_indices.shape), ::, frame_indices]
     result_image[::, np.arange(result_shape[1]), ::] = np.swapaxes(
         pixels_right * cols_right_weights[..., np.newaxis, np.newaxis] +
         pixels_left * cols_left_weights[..., np.newaxis, np.newaxis], 0, 1)
     return result_image
 
 
-def refocus(im_series, depth, motion_vectors=None):
+def focus(im_series, depth, motion_vectors=None):
     """
 
     :param im_series:
@@ -235,16 +241,41 @@ def calculate_motion2(im_series):
         interim_results.append(medians)
     return r
 
-            # motion_vectors[frame_i] = [x_val, y_val]
-        # if interim_results:
-        #     prev_results = interim_results[-1]
-        #     m_prev, m_new = np.mean(prev_results, axis=0), np.mean(normalized_vec, axis=0)
-        #     print(np.abs(m_new - m_prev))
-        #     if almost_equal(m_prev, m_new):
-        #         return motion_vectors
-        #
-        # interim_results.append(normalized_vec)
-    # return interim_results[-1]
+def calculate_motion3(im_series, scale=4):
+    """
+    Returns a list of vectors of motion between each image. For k images, we will get k-1 2D vectors
+    :param im_series: n X m X {1, 3} X k Array - k frames of n X m images, where the images can be grayscale or 3 channels
+    :return: Array of shape (k-1, 2)
+    """
+    if len(im_series.shape) == 3:
+        m, n, k = im_series.shape
+        gray_series = im_series
+
+    elif len(im_series.shape) == 4:
+        m, n, c, k = im_series.shape
+        if c == 3:
+            gray_series = rgb2gray_series(im_series)  # shape =  n X m X k
+        elif c == 1:
+            gray_series = np.squeeze(im_series)
+        else:
+            raise ValueError("Mis-aligned series shape {}. Must have 1 or 3 channels".format(im_series.shape))
+
+    else:
+        raise ValueError("Wrong shape for image series {}".format(im_series.shape))
+
+    assert k >= 2, "Motion is computed for at least 2 images, received {}.".format(k)
+
+    downscaled_series = rescale(gray_series, multichannel=True, scale=1/scale)
+    low_res_flows = np.zeros((2, ) + downscaled_series[..., 0].shape + (k-1,))
+    for frame_i in range(0, k-1):
+        first_im, second_im = downscaled_series[..., frame_i], downscaled_series[..., frame_i + 1]
+        flow = optical_flow_tvl1(first_im, second_im)  # returns shape 2, m, n
+        flow *= scale  # normalize to original resolution
+        low_res_flows[..., frame_i] = flow
+    original_flow_shape = (2, ) + gray_series.shape[: -1] + (gray_series.shape[-1] - 1,)
+    original_res_flows = resize(low_res_flows, output_shape=original_flow_shape)
+    return original_res_flows
+
 
 def almost_equal(v1, v2, tolerance=0.1):
     d = np.abs(v1 - v2)

@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import os
 import time
 from skimage.transform.pyramids import pyramid_gaussian
-
+import pickle
 
 
 def gen_artificial_series(s, with_ball=True, smooth=True, brighten=True, step=None):
@@ -58,7 +58,7 @@ class TestFocus(TestCase):
                 gen_artificial_series(s, brighten=False, step=1),
                 gen_artificial_series(s, brighten=False, step=5)
             ]:
-                res = refocus(series, depth=1)
+                res = focus(series, depth=1)
                 print(res.shape)
                 plt.imshow(res)
                 plt.show()
@@ -68,11 +68,10 @@ class TestFocus(TestCase):
         suffix = example.upper()
         p = os.path.join("..", "sample_data", example)
         series = open_series(p, suffix=suffix, extension="jpg")
-        res = refocus(series, depth=1, motion_vectors=["dummy"])
+        res = focus(series, depth=1, motion_vectors=["dummy"])
         print(res.shape)
         plt.imshow(res)
         plt.show()
-
 
 
 class TestMotion(TestCase):
@@ -151,30 +150,50 @@ class TestMotion(TestCase):
         # plt.imshow(v)
         # plt.show()
 
+    def test_motion_downscaled(self):
+        example = "apple"
+        suffix = example.upper()
+        p = os.path.join("..", "sample_data", example)
+        im_series = open_series(p, suffix=suffix, extension="jpg")
+        f = calculate_motion3(im_series, 16)
+        for i in range(0, f.shape[-1], 10):
+            plt.imshow(np.linalg.norm(f[..., i], axis=0))
+            plt.show()
 
-
-
-
-
-
-
-
-
+        with open("flow_apple", 'wb') as pf:
+            pickle.dump(f, pf)
 
 
 class TestStitch(TestCase):
+    def test_estimate_factor(self):
+        width = 400
+        for delta_cols, delta_frames in [
+            (400, 200), (200, 200), (200, 400), (2, 100), (100, 2), (2, 400), (400, 2)
+        ]:
+            print(delta_cols, delta_frames, estimate_factor(width, delta_frames, delta_cols))
+            print(-delta_cols, delta_frames, estimate_factor(width, delta_frames, -delta_cols))
+
+
+
     def test_stitch_artificial(self):
         for s in [(20,30,3,40), (200,300,3,100)]:
+            n, m , c, k = s
             series_ball = gen_artificial_series(s)
 
-            slice1 = ((0,0),(s[-1]-1, s[1]-1))
+
+            slice1 = ((0,0),(k-1, m-1))
             res = stitch(series_ball, slice1)
             plt.imshow(res)
             plt.show()
 
-            slice2 = ((2,s[0]//8),(s[-1]-2,s[0]-s[0]//8))
+            slice2 = ((2,m//8),(k-2,m-m//8))
             res2 = stitch(series_ball, slice2)
             plt.imshow(res2)
+            plt.show()
+
+            slice3 = ((2,10),(k-2,10))
+            res3 = stitch(series_ball, slice3)
+            plt.imshow(res3)
             plt.show()
 
     def test_stitch_image_file(self):
@@ -207,11 +226,21 @@ class TestStitch(TestCase):
         plt.imshow(res)
         plt.show()
 
+        slice4 = ((3, 10), (k - 3, 10))
+        t = time.time()
+        res = stitch(im_series, slice4)
+        print("Time: {}".format(time.time() - t))
+        plt.imshow(res)
+        plt.show()
+
+
         i = 0
         t = time.time()
-        for col in range(0, m, 4):
+        for col in range(0, m, 10):
             slice3 = ((0, col), (k - 1, col))
-            res = stitch(im_series, slice3)
+            res = stitch(im_series, slice3, 0.6)
+            plt.imshow(res)
+            plt.show()
             i += 1
         time.time() - t
 

@@ -92,6 +92,13 @@ function setup_sliders() {
             await request_focus();
         }
     });
+    const radius_inputs = $("[id*=-radius-input-]");
+    radius_inputs.change(async function (e) {
+
+        await request_focus();
+
+    })
+
 
 }
 
@@ -180,6 +187,8 @@ async function request_stitch() {
     url.searchParams.append('shift', shift_value ? shift_value : 0.5);
     url.searchParams.append('move', move_value ? move_value : 0);
     url.searchParams.append('stereo', stereo_value? stereo_value : 0);
+    console.log("Stitch/Viewpoint Request: "+ url.href);
+
 
     const canvas = $('#canvas-live-render');
     canvas.attr('src', url.href);
@@ -207,17 +216,18 @@ async function request_stitch() {
 }
 
 async function request_focus() {
-    const focus_value = $('#direct-focus').val();
+    const focus_depth = $('#focus-direct-depth').val();
+    const center = $('#focus-radius-input-center').val();
+    const radius = $('#focus-radius-input-radius').val();
+
+
     const url = new URL(SERVER_HOST + 'focus/');
-    url.searchParams.append('value', focus_value);
-
-    // const options = {
-    //   method: 'GET'
-    // };
-
+    url.searchParams.append('depth', focus_depth);
+    url.searchParams.append('center', center);
+    url.searchParams.append('radius', radius);
+    console.log("Focus Request: "+ url.href);
     const canvas = $('#canvas-live-render');
     canvas.attr('src', url.href);
-    console.log(canvas)
 
     // const request = new Request(url.href, options);
     //

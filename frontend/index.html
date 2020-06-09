@@ -15,7 +15,7 @@
 <!--  <script src="svg-injector.min.js"></script>-->
 
   <!-- Custom styles for this template -->
-  <link href="css/shop-item.css" rel="stylesheet">
+<!--  <link href="css/shop-item.css" rel="stylesheet">-->
   <link href="css/gui.css" rel="stylesheet">
   <link href="node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
 <!--  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>-->
@@ -98,8 +98,8 @@
       </div>
 
       <div class="col-lg-7" id="buttons_file">
-        <button type="button" class="btn btn-primary control_button">Save</button>
-        <button id="file-button-upload" type="button" class="btn btn-secondary control_button">Upload</button>
+        <button type="button" class="btn btn-primary control_button file-button col-lg-3">Save</button>
+        <button id="file-button-upload" type="button" class="btn btn-secondary control_button file-button col-lg-3">Upload</button>
 
         <!-- Save / Load buttons go here-->
       </div>
@@ -109,9 +109,19 @@
       <div class="col-lg-5">
         <div class="tab-content" id="pills-tabContent">
           <div class="tab-pane fade show active" id="motion-pane" role="tabpanel" aria-labelledby="motion-tab">
-            <p>
-              Lorem
-            </p>
+            <div class="row">
+              <div class="col-lg-12" id="">
+                <button id="motion-button-calculate" type="button" class="btn btn-secondary  col-lg-4 motion-button">Calculate</button>
+                <button id="motion-button-save" type="button" class="btn btn-secondary  col-lg-4 motion-button">Save</button>
+              </div>
+            </div>
+
+            <div class="wrapper row">
+              <div class="form-group col-lg-12">
+                <label for="motion-vector-display"></label>
+                <textarea class="form-control rounded-0" id="motion-vector-display" rows="5" readonly>[]</textarea>
+              </div>
+            </div>
           </div>
           <div class="tab-pane fade" id="focus-pane" role="tabpanel" aria-labelledby="focus-tab">
             <div id="input_elements_focus">
@@ -119,15 +129,20 @@
                 <div class="col-sm-1">
                   <label for="focus-slider-focus" class="input-element-label">Focus</label>
                 </div>
-                <div class="col-sm-2">
-<!--                  <span class="oi oi-camera-slr"></span>-->
-                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                <div class="col-sm-1">
+                  <svg class="bi bi-camera-video-fill svg-gui-icon left-icon"  viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.667 3h6.666C10.253 3 11 3.746 11 4.667v6.666c0 .92-.746 1.667-1.667 1.667H2.667C1.747 13 1 12.254 1 11.333V4.667C1 3.747 1.746 3 2.667 3z"></path>
+                        <path d="M7.404 8.697l6.363 3.692c.54.313 1.233-.066 1.233-.697V4.308c0-.63-.693-1.01-1.233-.696L7.404 7.304a.802.802 0 0 0 0 1.393z"></path>
+                  </svg>
                 </div>
-                <div class="col-sm-7">
+                <div class="col-sm-9">
                   <input type="range" class="custom-range" id="focus-slider-focus" min="0" max="1" step="0.1" >
                 </div>
-                <div class="col-sm-2">
-                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                <div class="col-sm-1">
+                  <svg class="bi bi-sun svg-gui-icon right-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.5 8a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0z"></path>
+                    <path fill-rule="evenodd" d="M8.202.28a.25.25 0 0 0-.404 0l-.91 1.255a.25.25 0 0 1-.334.067L5.232.79a.25.25 0 0 0-.374.155l-.36 1.508a.25.25 0 0 1-.282.19l-1.532-.245a.25.25 0 0 0-.286.286l.244 1.532a.25.25 0 0 1-.189.282l-1.509.36a.25.25 0 0 0-.154.374l.812 1.322a.25.25 0 0 1-.067.333l-1.256.91a.25.25 0 0 0 0 .405l1.256.91a.25.25 0 0 1 .067.334L.79 10.768a.25.25 0 0 0 .154.374l1.51.36a.25.25 0 0 1 .188.282l-.244 1.532a.25.25 0 0 0 .286.286l1.532-.244a.25.25 0 0 1 .282.189l.36 1.508a.25.25 0 0 0 .374.155l1.322-.812a.25.25 0 0 1 .333.067l.91 1.256a.25.25 0 0 0 .405 0l.91-1.256a.25.25 0 0 1 .334-.067l1.322.812a.25.25 0 0 0 .374-.155l.36-1.508a.25.25 0 0 1 .282-.19l1.532.245a.25.25 0 0 0 .286-.286l-.244-1.532a.25.25 0 0 1 .189-.282l1.508-.36a.25.25 0 0 0 .155-.374l-.812-1.322a.25.25 0 0 1 .067-.333l1.256-.91a.25.25 0 0 0 0-.405l-1.256-.91a.25.25 0 0 1-.067-.334l.812-1.322a.25.25 0 0 0-.155-.374l-1.508-.36a.25.25 0 0 1-.19-.282l.245-1.532a.25.25 0 0 0-.286-.286l-1.532.244a.25.25 0 0 1-.282-.189l-.36-1.508a.25.25 0 0 0-.374-.155l-1.322.812a.25.25 0 0 1-.333-.067L8.203.28zM8 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"></path>
+                  </svg>
                 </div>
 
               </div>
@@ -176,31 +191,38 @@
                 <div class="col-sm-1">
                   <label for="viewpoint-slider-shift" class="input-element-label">Shift</label>
                 </div>
-                <div class="col-sm-2">
-                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                <div class="col-sm-1">
+                  <svg class="bi bi-box-arrow-left svg-gui-icon left-icon" viewBox="0 0 16 16"  xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M4.354 11.354a.5.5 0 0 0 0-.708L1.707 8l2.647-2.646a.5.5 0 1 0-.708-.708l-3 3a.5.5 0 0 0 0 .708l3 3a.5.5 0 0 0 .708 0z"></path>
+                    <path fill-rule="evenodd" d="M11.5 8a.5.5 0 0 0-.5-.5H2a.5.5 0 0 0 0 1h9a.5.5 0 0 0 .5-.5z"></path>
+                    <path fill-rule="evenodd" d="M14 13.5a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 14 2.5H7A1.5 1.5 0 0 0 5.5 4v1.5a.5.5 0 0 0 1 0V4a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5H7a.5.5 0 0 1-.5-.5v-1.5a.5.5 0 0 0-1 0V12A1.5 1.5 0 0 0 7 13.5h7z"></path>
+                  </svg>
                 </div>
-                <div class="col-sm-7">
-                  <div id="widget">
-                    <div id="markerbounds">
-                      <div id="box">
-                        <div id="marker1"></div>
-                        <div id="marker2"></div>
-<!--                        <svg height="210" width="500">-->
-<!--                          <line id="slice-line" x1="0" y1="0" x2="200" y2="200" style="stroke:rgb(255,0,0);stroke-width:2" />-->
-<!--                        </svg>-->
+                <div class="col-sm-9">
+<!--                  <div id="widget">-->
+<!--                    <div id="markerbounds">-->
+<!--                      <div id="box">-->
+<!--                        <div id="marker1"></div>-->
+<!--                        <div id="marker2"></div>-->
+<!--&lt;!&ndash;                        <svg height="210" width="500">&ndash;&gt;-->
+<!--&lt;!&ndash;                          <line id="slice-line" x1="0" y1="0" x2="200" y2="200" style="stroke:rgb(255,0,0);stroke-width:2" />&ndash;&gt;-->
+<!--&lt;!&ndash;                        </svg>&ndash;&gt;-->
 
-                      </div>
-                    </div>
-                    <div>
-                      <p id="coord"></p>
-                    </div>
-                  </div>
+<!--                      </div>-->
+<!--                    </div>-->
+<!--                    <div>-->
+<!--                      <p id="coord"></p>-->
+<!--                    </div>-->
+<!--                  </div>-->
 
-<!--                  <input type="range" multiple value="10,80" />-->
                   <input type="range" class="custom-range " id="viewpoint-slider-shift" min="0" max="1"   >
                 </div>
-                <div class="col-sm-2">
-                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                <div class="col-sm-1">
+                  <svg class="bi bi-box-arrow-right svg-gui-icon right-icon" viewBox="0 0 16 16"  xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M11.646 11.354a.5.5 0 0 1 0-.708L14.293 8l-2.647-2.646a.5.5 0 0 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0z"></path>
+                    <path fill-rule="evenodd" d="M4.5 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5z"></path>
+                    <path fill-rule="evenodd" d="M2 13.5A1.5 1.5 0 0 1 .5 12V4A1.5 1.5 0 0 1 2 2.5h7A1.5 1.5 0 0 1 10.5 4v1.5a.5.5 0 0 1-1 0V4a.5.5 0 0 0-.5-.5H2a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-1.5a.5.5 0 0 1 1 0V12A1.5 1.5 0 0 1 9 13.5H2z"></path>
+                  </svg>
                 </div>
 
               </div>
@@ -247,15 +269,25 @@
                 <div class="col-sm-1">
                   <label for="viewpoint-slider-move" class="input-element-label">Move</label>
                 </div>
-                <div class="col-sm-2">
+                <div class="col-sm-1">
+                  <svg class="bi bi-arrows-angle-contract svg-gui-icon left-icon"  viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M9.5 2.036a.5.5 0 0 1 .5.5v3.5h3.5a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5z"></path>
+                    <path fill-rule="evenodd" d="M14.354 1.646a.5.5 0 0 1 0 .708l-4.5 4.5a.5.5 0 1 1-.708-.708l4.5-4.5a.5.5 0 0 1 .708 0zm-7.5 7.5a.5.5 0 0 1 0 .708l-4.5 4.5a.5.5 0 0 1-.708-.708l4.5-4.5a.5.5 0 0 1 .708 0z"></path>
+                    <path fill-rule="evenodd" d="M2.036 9.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V10h-3.5a.5.5 0 0 1-.5-.5z"></path>
+                  </svg>
 
-                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+
                 </div>
-                <div class="col-sm-7">
+                <div class="col-sm-9">
                   <input type="range" class="custom-range" id="viewpoint-slider-move" min="-1" max="1"   >
                 </div>
-                <div class="col-sm-2">
-                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                <div class="col-sm-1">
+                  <svg class="bi bi-arrows-angle-expand svg-gui-icon right-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M1.5 10.036a.5.5 0 0 1 .5.5v3.5h3.5a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5z"></path>
+                    <path fill-rule="evenodd" d="M6.354 9.646a.5.5 0 0 1 0 .708l-4.5 4.5a.5.5 0 0 1-.708-.708l4.5-4.5a.5.5 0 0 1 .708 0zm8.5-8.5a.5.5 0 0 1 0 .708l-4.5 4.5a.5.5 0 0 1-.708-.708l4.5-4.5a.5.5 0 0 1 .708 0z"></path>
+                    <path fill-rule="evenodd" d="M10.036 1.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 1 1-1 0V2h-3.5a.5.5 0 0 1-.5-.5z"></path>
+                  </svg>
+
                 </div>
 
               </div>
@@ -299,15 +331,22 @@
                 <div class="col-sm-1">
                   <label for="viewpoint-slider-stereo" class="input-element-label">Stereo</label>
                 </div>
-                <div class="col-sm-2">
+                <div class="col-sm-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-box svg-gui-icon left-icon" viewBox="0 0 16 16" >
 
-                  <img src="https://via.placeholder.com/25x25"  alt="camera_icon" class="img-thumbnail"/>
+                    <path id="svg_1" d="m8.186,1.113a0.5,0.5 0 0 0 -0.372,0l-5.968,2.387l6.154,2.461l6.154,-2.461l-5.968,-2.387zm6.814,3.126l-6.5,2.6l0,7.922l6.5,-2.6l0,-7.921l0,-0.001zm-7.5,10.523l0,-7.924l-6.5,-2.599l0,7.923l6.5,2.6zm-0.057,-14.578a1.5,1.5 0 0 1 1.114,0l7.129,2.852a0.5,0.5 0 0 1 0.314,0.464l0,8.662a1,1 0 0 1 -0.629,0.928l-7.185,2.874a0.5,0.5 0 0 1 -0.372,0l-7.184,-2.874a1,1 0 0 1 -0.63,-0.928l0,-8.662a0.5,0.5 0 0 1 0.314,-0.464l7.129,-2.852z" fill-rule="evenodd"></path>
+                    <path transform="rotate(-34.9 4.235363483428954,9.550513267517092) " id="svg_2" d="m-0.309277,9.550514l4.544641,-6.826602l4.544641,6.826602l-4.544641,6.826602l-4.544641,-6.826602z" fill-opacity="0.5" fill="#007bff"></path>
+                  </svg>
                 </div>
-                <div class="col-sm-7">
+                <div class="col-sm-9">
                   <input type="range" class="custom-range" id="viewpoint-slider-stereo" min="-1" max="1"   >
                 </div>
-                <div class="col-sm-2">
-                  <img src="https://via.placeholder.com/25x25"  alt="infinity_icon" class="img-thumbnail"/>
+                <div class="col-sm-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="bi bi-box svg-gui-icon right-icon" viewBox="0 0 16 16">
+                   <path transform="rotate(34.9 2.253207921981822,13.911254882812496) rotate(-180 4.235363960266114,9.550514221191406) " id="svg_2" d="m-3.480728,13.911258l4.544641,-6.826602l4.544641,6.826602l-4.544641,6.826602l-4.544641,-6.826602z" fill-opacity="0.5"  fill="#007bff"></path>
+                   <path id="svg_1" d="m8.186,1.113a0.5,0.5 0 0 0 -0.372,0l-5.968,2.387l6.154,2.461l6.154,-2.461l-5.968,-2.387zm6.814,3.126l-6.5,2.6l0,7.922l6.5,-2.6l0,-7.921l0,-0.001zm-7.5,10.523l0,-7.924l-6.5,-2.599l0,7.923l6.5,2.6zm-0.057,-14.578a1.5,1.5 0 0 1 1.114,0l7.129,2.852a0.5,0.5 0 0 1 0.314,0.464l0,8.662a1,1 0 0 1 -0.629,0.928l-7.185,2.874a0.5,0.5 0 0 1 -0.372,0l-7.184,-2.874a1,1 0 0 1 -0.63,-0.928l0,-8.662a0.5,0.5 0 0 1 0.314,-0.464l7.129,-2.852z" fill-rule="evenodd"></path>
+
+                  </svg>
                 </div>
 
               </div>
@@ -393,7 +432,7 @@
 <!--  <script src="vendor/jquery/jquery.min.js"></script>-->
 <!--  <script type="js" src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>-->
 
-  <script src="src/controller.js"></script>
+  <script type="module" src="src/controller.js"></script>
 
 
 </body>

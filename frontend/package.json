@@ -33,7 +33,8 @@
         "jquery": "3.5.1",
         "jszip": "3.4.0",
         "popper.js": "1.14.3",
-        "open-iconic": "1.1.1"
+        "open-iconic": "1.1.1",
+        "@primer/octicons": "9.6.0"
     },
     "devDependencies": {
         "browser-sync": "2.26.7",

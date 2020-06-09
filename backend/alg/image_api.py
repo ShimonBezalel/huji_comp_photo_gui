@@ -27,13 +27,14 @@ class Gui:
         self._last_result = None
         self._gui_live_result_height = None
         self._gui_live_result_width = None
+        self._motion_flow = None
         self._motion_vec = None
-        self._avg_motion = None
+        self._avg_horizontal_motion = None
         self._interp_move = None
         self._interp_stereo = None
         self._interp_shift = None
 
-    def setup(self, series_path, suffix="", extension="", height=500, width=900):
+    def setup(self, series_path, suffix="", extension="", height=500, width=900, zero_index=False):
         """
 
         :param extension:
@@ -41,8 +42,10 @@ class Gui:
         :param series_path:
         :param height:
         :param width:
+        :param zero_index:
+
         """
-        self._series = open_series(series_path, suffix=suffix, extension=extension)
+        self._series = open_series(series_path, suffix=suffix, extension=extension, zero_index=zero_index)
         self._rows, self._cols, self._channels, self._frames = self._series.shape
         self._gray_scale_series = rgb2gray_series(self._series)
         self._pyramid = pyramid_gaussian(self._series, downscale=2, multichannel=True)
@@ -52,16 +55,21 @@ class Gui:
         self._gui_live_result_width = width
 
         if DEBUG:
-            if os.path.exists("test.pkl"):
-                with open('test.pkl', 'rb') as f:
-                    self._motion_vec = pickle.load(f)
+            pickle_path = "{}.pkl".format(suffix)
+            if os.path.exists(pickle_path):
+                with open(pickle_path, 'rb') as f:
+                    self._motion_flow = pickle.load(f)
             else:
-                with open('test.pkl', 'wb') as f:
-                    self._motion_vec = calculate_motion3(self._series)
+                with open(pickle_path, 'wb') as f:
+                    self._motion_flow = calculate_motion3(self._series)
                     pickle.dump(self._motion_vec, f)
         else:
-            self._motion_vec = calculate_motion3(self._series)
-        self._avg_motion = np.mean(self._motion_vec)
+            self._motion_flow = calculate_motion3(self._series)
+        self._motion_vec = []
+        for frame_i in range(0, self._frames-1):
+            self._motion_vec.append(np.median(self._motion_flow[..., frame_i], axis=(1, 2)))
+        self._motion_vec = np.array(self._motion_vec)
+        self._avg_horizontal_motion = np.mean(self._motion_vec[..., 1])  # only
         self._interp_move = interp1d((-1, 1), (-(np.pi / 2), np.pi / 2))
         self._interp_stereo = interp1d((-1, 1), (0, self._cols - 1))
         self._interp_shift = interp1d((0, 1), (0, self._frames - 1))
@@ -209,7 +217,7 @@ class Gui:
         return res
 
     def focus(self, depth):
-        self._last_result = focus(self._series, depth=depth, motion_vectors=self._motion_vec)
+        self._last_result = focus(self._series, depth=depth)
         return self._resize_result()
 
     def get_last_result(self, resized=True):
@@ -246,7 +254,10 @@ class Gui:
             for col in (c_start, c_end):
                 assert (0 <= col < self._cols)
 
-        r = stitch(self._series, slice=slice, avg_motion=self._avg_motion)
+        r = stitch(self._series, slice=slice, avg_motion=self._avg_horizontal_motion)
         self._last_result = (r - r.min()) / (np.ptp(r))
         return self._resize_result()
+
+    def get_motion_vec(self):
+        return self._motion_vec
 

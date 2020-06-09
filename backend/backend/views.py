@@ -1,4 +1,6 @@
-from django.http import HttpResponse, FileResponse
+import pprint
+
+from django.http import HttpResponse, FileResponse, JsonResponse
 
 from django.views.decorators.csrf import csrf_exempt
 import os
@@ -13,11 +15,17 @@ from alg.image_api import Gui as Cache
 
 test_cache = Cache()
 
-example = "apple"
-suffix = example.upper()
-p = os.path.join("..", "sample_data", example)
+example = "EmekRefaim"
+suffix = 'hillel11_long_sdepth_ax18'
+p = os.path.join("sample_data", example)
 
-test_cache.setup(series_path=p, suffix=suffix, extension="jpg", height=500, width=900)
+test_cache.setup(series_path=p, suffix=suffix, extension="jpg", zero_index=True, height=500, width=900)
+#
+# example = "apples"
+# suffix = 'APPLE'
+# p = os.path.join("sample_data", example)
+#
+# test_cache.setup(series_path=p, suffix=suffix, extension="jpg", height=500, width=900)
 
 
 
@@ -65,23 +73,24 @@ def upload_images(request):
 
 
 def focus(request):
+    res = test_cache.get_last_result()
     try:
-        value = request.GET.get('value')
-        value = float(value)
-        path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE{:03d}.jpg'.format(int(value * 200)))
-        with open(path, "rb") as f:
-            return HttpResponse(f.read(), content_type="image/jpeg")
+        depth = request.GET.get('depth')
+        depth = float(depth)
+        # path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE{:03d}.jpg'.format(int(value * 200)))
+        shift_factor = test_cache.get_motion_avg() * depth
+        res = test_cache.focus(shift_factor)
+    except Exception as e:
+        print(e)
+    plt.imsave("tmp.jpeg", res)
+    with open("tmp.jpeg", 'rb') as f:
+        return HttpResponse(f.read(), content_type="image/jpeg")
 
-    # load images to director
-    except:
-        response = HttpResponse('')
-        response.status_code = 400
-        return response
 
 
 def viewpoint(request):
     try:
-        res:np.ndarray = test_cache.get_last_result()
+        res: np.ndarray = test_cache.get_last_result()
         try:
             slice = request.GET.get('slice')
             if slice not in [None, "", "()", "((),())", (), []]:
@@ -114,7 +123,9 @@ def viewpoint(request):
 
 def motion(request):
     try:
-        return HttpResponse()
+        motion_vec = np.round(test_cache.get_motion_vec(), 3).tolist()
+        s = pprint.pformat(motion_vec, indent=4)
+        return JsonResponse({'motion_vector': motion_vec, 'as_string': s})
 
     # load images to director
     except:

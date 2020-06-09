@@ -111,23 +111,28 @@
           <div class="tab-pane fade show active" id="motion-pane" role="tabpanel" aria-labelledby="motion-tab">
             <div class="row">
               <div class="col-lg-12" id="">
-                <button id="motion-button-calculate" type="button" class="btn btn-secondary  col-lg-4 motion-button">Calculate</button>
+                <button id="motion-button-calculate"  data-toggle="tooltip" title="Default tooltip" type="button" class="btn btn-secondary  col-lg-4 motion-button">Calculate</button>
                 <button id="motion-button-save" type="button" class="btn btn-secondary  col-lg-4 motion-button">Save</button>
               </div>
             </div>
 
             <div class="wrapper row">
               <div class="form-group col-lg-12">
-                <label for="motion-vector-display"></label>
-                <textarea class="form-control rounded-0" id="motion-vector-display" rows="5" readonly>[]</textarea>
+<!--                  <p class="motion-desc-text">From frame<sub>i</sub> to frame<sub>i+1</sub></p>-->
+<!--                  <p class="motion-desc-text">[motion<sub>height</sub>,  motion<sub>width</sub>]</p>-->
+
+                  <hr>
+                <textarea data-toggle="tooltip" data-placement="right" title='<p class="motion-desc-text">From frame<sub>i</sub> to frame<sub>i+1</sub></p>
+                  <p class="motion-desc-text">[motion<sub>h</sub>,  motion<sub>w</sub>]</p>' data-html="true" class="form-control rounded-0"
+                          id="motion-vector-display" rows="5" readonly>[]</textarea>
               </div>
             </div>
           </div>
           <div class="tab-pane fade" id="focus-pane" role="tabpanel" aria-labelledby="focus-tab">
-            <div id="input_elements_focus">
+            <div id="input_elements-depth">
               <div class="row input-element-row">
                 <div class="col-sm-1">
-                  <label for="focus-slider-focus" class="input-element-label">Focus</label>
+                  <label for="focus-slider-depth" class="input-element-label">Focus</label>
                 </div>
                 <div class="col-sm-1">
                   <svg class="bi bi-camera-video-fill svg-gui-icon left-icon"  viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -136,7 +141,7 @@
                   </svg>
                 </div>
                 <div class="col-sm-9">
-                  <input type="range" class="custom-range" id="focus-slider-focus" min="0" max="1" step="0.1" >
+                  <input type="range" class="custom-range" id="focus-slider-depth" min="0" max="1" step="0.1" >
                 </div>
                 <div class="col-sm-1">
                   <svg class="bi bi-sun svg-gui-icon right-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -148,17 +153,17 @@
               </div>
               <div class="row input-element-row">
                 <div class="col-sm-1">
-                  <label class="input-element-label" id="label-focus-direct-focus" for="focus-direct-focus">Direct</label>
+                  <label class="input-element-label" id="label-depth-direct-depth" for="focus-direct-depth">Direct</label>
                 </div>
                 <div class="col-sm-3">
-                  <input class="form-control form-control-sm" type="number" step="0.002" id="focus-direct-focus">
+                  <input class="form-control form-control-sm" type="number" step="0.002" id="focus-direct-depth">
                 </div>
                 <div class="col-sm-7">
-                  <div class="input-group">
-                    <input type="text" class="form-control" aria-label="Text input with dropdown button" placeholder="+ New Preset">
+                  <div class="input-group" id="focus-depth-select">
+                    <input type="text" class="form-control" id="focus-depth-select-input" aria-label="Text input with dropdown button" placeholder="+ New Preset">
                     <div class="input-group-append">
                       <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
-                      <div class="dropdown-menu">
+                      <div class="dropdown-menu" id="focus-depth-select-dropdown">
                         <a class="dropdown-item" href="#">Example 1</a>
                         <a class="dropdown-item" href="#">Example 2</a>
                         <a class="dropdown-item" href="#">Example 3</a>
@@ -173,10 +178,10 @@
               </div>
               <div class="row input-element-row">
                 <div class="col-sm-1">
-                  <label class="input-element-label " for="focus-step-focus">Step</label>
+                  <label class="input-element-label " for="focus-step-depth">Step</label>
                 </div>
                 <div class="col-sm-3">
-                  <input class="form-control form-control-sm" id="focus-step-focus" type="number" step="0.002" value="0.1">
+                  <input class="form-control form-control-sm" id="focus-step-depth" type="number" step="0.002" value="0.1">
                 </div>
 
               </div>
@@ -186,7 +191,7 @@
 
           </div>
           <div class="tab-pane fade" id="viewpoint-pane" role="tabpanel" aria-labelledby="viewpoint-tab">
-            <div id="input_elements_shift">
+            <div id="input-elements-shift">
               <div class="row input-element-row">
                 <div class="col-sm-1">
                   <label for="viewpoint-slider-shift" class="input-element-label">Shift</label>
@@ -264,7 +269,7 @@
 
             </div>
             <hr/>
-            <div id="input_elements_move">
+            <div id="input-elements-move">
               <div class="row input-element-row">
                 <div class="col-sm-1">
                   <label for="viewpoint-slider-move" class="input-element-label">Move</label>
@@ -424,10 +429,13 @@
     </div>
     <!-- /.container -->
   </footer>
-
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
   <!-- Bootstrap core JavaScript -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<!--    <script src="https://unpkg.com/@popperjs/core@2"></script>-->
+<!--  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>-->
+<!--  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>-->
 
 <!--  <script src="vendor/jquery/jquery.min.js"></script>-->
 <!--  <script type="js" src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>-->

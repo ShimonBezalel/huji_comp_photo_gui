@@ -29,12 +29,12 @@
         "url": "https://github.com/BlackrockDigital/startbootstrap-shop-item.git"
     },
     "dependencies": {
+        "@primer/octicons": "9.6.0",
         "bootstrap": "4.3.1",
         "jquery": "3.5.1",
         "jszip": "3.4.0",
-        "popper.js": "1.14.3",
         "open-iconic": "1.1.1",
-        "@primer/octicons": "9.6.0"
+        "popper.js": "^1.14.3"
     },
     "devDependencies": {
         "browser-sync": "2.26.7",

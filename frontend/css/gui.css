@@ -124,6 +124,8 @@ At the bottom of the JS code, the 'draw' function is called. Try changing the in
   font-size: 1.5rem;
 }
 
+
+
 textarea::-webkit-scrollbar {
   width: 12px;
   background-color: #F5F5F5;
@@ -139,3 +141,16 @@ textarea::-webkit-scrollbar-thumb {
 /*    margin-left: 0.5em;*/
 /*    margin-right: 0.5em;*/
 /*}*/
+.motion-desc-text {
+    font-size: 0.8em;
+    text-align: left;
+
+}
+.motion-desc-text>sub{
+    font-size: 70%;
+}
+
+#motion-vector-display {
+        height: 250px;
+
+}

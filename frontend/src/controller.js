@@ -118,6 +118,26 @@ function setup_controllers() {
     $(".close").click(
         (e) => modal.fadeOut('fast')
     );
+    const motion_button = $("#motion-button-calculate");
+    motion_button.click(
+        (e) => request_motion()
+    );
+    // motion_button.tooltip();
+    const dropdown_items = $(".dropdown-item");
+    dropdown_items.click((e) => {
+        console.log(e);
+
+        const item_val = e.target.text;
+        console.log(item_val);
+        const menu_id = e.target.parentElement.id;
+        console.log(menu_id);
+
+        const input_elem = $("#" + menu_id.replace("dropdown", "input"));
+        console.log(input_elem);
+
+        input_elem.val(item_val);
+        // e.target.parent.parent.siblings.val(item_val);
+    })
 }
 setup_sliders();
 setup_controllers();
@@ -139,14 +159,15 @@ async function request_motion() {
             console.error(response);
           throw new Error('Something went wrong on api server!');
         }
-      }).then(json => json['body']['motion_vector']
+      }).then(json => json['as_string']
         ).then(
-            im => console.log(im)
-            //todo: use image
+            vec_string => {
+                const elem = $("#motion-vector-display");
+                elem.val(vec_string);
+                elem.tooltip('toggle');
+            }
         );
 }
-
-request_motion();
 
 async function request_stitch() {
     const shift_value = $('#viewpoint-direct-shift').val();

@@ -68,10 +68,12 @@ class TestFocus(TestCase):
         suffix = example.upper()
         p = os.path.join("..", "sample_data", example)
         series = open_series(p, suffix=suffix, extension="jpg")
-        res = focus(series, depth=1, motion_vectors=["dummy"])
+        res = focus(series,shift_facter=0.5, depth=1)
         print(res.shape)
         plt.imshow(res)
         plt.show()
+
+
 
 
 class TestMotion(TestCase):

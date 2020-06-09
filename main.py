@@ -7,7 +7,7 @@ import time
 from skimage.transform import rescale
 
 if __name__ == '__main__':
-    example_path = "/Users/shimonheimowitz/PycharmProjects/huji_comp_photo_gui/sample_data/apples"
+    example_path = "/Users/shimonheimowitz/PycharmProjects/huji_comp_photo_gui/sample_data/apple"
     suffix = "APPLE"
     for root, dirs, files in os.walk(example_path):
         k = len(files)

@@ -23,8 +23,8 @@ addEvent(document, "keydown", function (e) {
     e = e || window["event"];
     if (e.key === 'Shift'){
         console.log("d shift");
-        const sensitivity_controls = $("[id^=step-]");
-        const sliders = $("[id^=slider-]");
+        const sensitivity_controls = $("[id*=-step-]");
+        const sliders = $("[id*=-slider-]");
         sensitivity_controls.each((index, elem) => elem.value = elem.value / 5);
         sliders.each((index, elem) => elem.step = elem.step / 5);
         // slider.step = SLOW_STEP;
@@ -36,8 +36,8 @@ addEvent(document, "keyup", function (e) {
     console.log("up key");
 
     if (e.key === "Shift"){
-        const sensitivity_controls = $("[id^=step-]");
-        const sliders = $("[id^=slider-]");
+        const sensitivity_controls = $("[id*=-step-]");
+        const sliders = $("[id*=-slider-]");
         sensitivity_controls.each((index, elem) => elem.value = elem.value * 5);
         sliders.each((index, elem) => elem.step = elem.step * 5);
 
@@ -47,7 +47,7 @@ addEvent(document, "keyup", function (e) {
 });
 
 function setup_sliders() {
-    const step_controllers = $("[id^=step-]");
+    const step_controllers = $("[id*=-step-]");
     step_controllers.attr("value", 0.01);
     step_controllers.change(function (e) {
         const slider = $("#" + e.target.id.replace("step", "slider"));
@@ -57,13 +57,14 @@ function setup_sliders() {
         direct.each((i, elem) => elem.step = e.target.value );
     });
 
-    const slider_controllers = $("[id^=slider-]");
+    const slider_controllers = $("[id*=-slider-]");
     slider_controllers.attr("step", 0.01);
     slider_controllers.attr("value", (slider_controllers.attr("max") - slider_controllers.attr("min")) / 2);
 
     slider_controllers.change(async function (e) {
         const direct = $("#" + e.target.id.replace("slider", "direct"));
         direct.each((i, elem) => elem.value = e.target.value);
+        console.log(e.target.id);
         if (e.target.id.includes('viewpoint')){
             await request_stitch();
         }
@@ -73,7 +74,7 @@ function setup_sliders() {
 
     });
 
-    const direct_controllers = $("[id^=direct-]");
+    const direct_controllers = $("[id*=-direct-]");
     direct_controllers.attr("step", 0.01);
     direct_controllers.each((i, elem) => {
         const slider = $("#" + elem.id.replace("direct", "slider"));
@@ -146,18 +147,19 @@ async function request_motion() {
 }
 
 async function request_stitch() {
-    const shift_value = $('#direct-shift').val();
-    const move_value = $('#direct-move').val();
-    const stereo_value = $('#direct-stereo').val();
+    const shift_value = $('#viewpoint-direct-shift').val();
+    const move_value = $('#viewpoint-direct-move').val();
+    const stereo_value = $('#viewpoint-direct-stereo').val();
 
     const url = new URL(SERVER_HOST + 'viewpoint/');
-    url.searchParams.append('shift_start', shift_value);
-    url.searchParams.append('shift_end', shift_value); //todo: shift end?
-    url.searchParams.append('move', move_value);
-    url.searchParams.append('stereo', stereo_value);
+    console.log(url.href);
+
+    url.searchParams.append('shift', shift_value ? shift_value : 0.5);
+    url.searchParams.append('move', move_value ? move_value : 0);
+    url.searchParams.append('stereo', stereo_value? stereo_value : 0);
 
     const canvas = $('#canvas-live-render');
-    canvas[0].attr('src', url.href);
+    canvas.attr('src', url.href);
 
     // const options = {
     //   method: 'GET'
@@ -242,6 +244,4 @@ async function request_upload() {
 
 
 }
-
-
 

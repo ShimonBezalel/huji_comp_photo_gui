@@ -6,26 +6,27 @@ from django.views.decorators.csrf import csrf_exempt
 import os
 import numpy as np
 from matplotlib import pyplot as plt
+import zipfile
 
-
+from backend import settings
 from backend.settings import BASE_DIR
 import random
 
-from alg.image_api import Gui as Cache
+from alg.image_api import Gui as Cache, open_series
 
 test_cache = Cache()
 
-example = "EmekRefaim"
-suffix = 'hillel11_long_sdepth_ax18'
-p = os.path.join("sample_data", example)
-
-test_cache.setup(series_path=p, suffix=suffix, extension="jpg", zero_index=True, height=500, width=900)
-#
-# example = "apples"
-# suffix = 'APPLE'
+# example = "EmekRefaim"
+# suffix = 'hillel11_long_sdepth_ax18'
 # p = os.path.join("sample_data", example)
 #
-# test_cache.setup(series_path=p, suffix=suffix, extension="jpg", height=500, width=900)
+# test_cache.setup(series_path=p, suffix=suffix, extension="jpg", zero_index=True, height=500, width=900)
+#
+example = "apples"
+suffix = 'APPLE'
+p = os.path.join("sample_data", example)
+
+test_cache.setup(series_path=p, suffix=suffix, extension="jpg", height=500, width=900)
 
 
 
@@ -41,6 +42,11 @@ def upload_images(request):
     try:
         if not file:
             raise ValueError
+        with zipfile.ZipFile(file, 'r') as zip_ref:
+            zip_ref.extractall(settings.IMAGES_DIR)
+            # TODO
+        open_series(settings.IMAGES_DIR)
+
     # load images to directory
 
     except:
@@ -50,26 +56,6 @@ def upload_images(request):
     return HttpResponse('')
 
 
-#
-# def focus_image(request):
-#     try:
-#         value = request.GET.get('value')
-#
-#         try:
-#             with open(valid_image, "rb") as f:
-#                 return HttpResponse(f.read(), content_type="image/jpeg")
-#         except IOError:
-#             red = Image.new('RGBA', (1, 1), (255, 0, 0, 0))
-#             response = HttpResponse(content_type="image/jpeg")
-#             red.save(response, "JPEG")
-#             return response
-#
-#     # load images to directory
-#     except:
-#         response = HttpResponse('')
-#         response.status_code = 400
-#         return response
-#     return HttpResponse('')
 
 
 def focus(request):
@@ -85,7 +71,6 @@ def focus(request):
     plt.imsave("tmp.jpeg", res)
     with open("tmp.jpeg", 'rb') as f:
         return HttpResponse(f.read(), content_type="image/jpeg")
-
 
 
 def viewpoint(request):

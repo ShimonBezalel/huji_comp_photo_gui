@@ -62,10 +62,12 @@ def focus(request):
     res = test_cache.get_last_result()
     try:
         depth = request.GET.get('depth')
+        center = int(request.GET.get('center'))
+        radius = int(request.GET.get('radius'))
         depth = float(depth)
         # path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE{:03d}.jpg'.format(int(value * 200)))
-        shift_factor = test_cache.get_motion_avg() * depth
-        res = test_cache.focus(shift_factor)
+
+        res = test_cache.focus(depth, center, radius)
     except Exception as e:
         print(e)
     plt.imsave("tmp.jpeg", res)

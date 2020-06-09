@@ -106,6 +106,16 @@ class Gui:
         output = np.pad(resized, pad_width=padding_widths, mode='constant')
         return output
 
+
+    def focus(self, depth, center, radius):
+		rows, columns, chanels, frames = self._series.shape
+		start_frame = max(0, center - radius)
+		end_frame = min(columns, center + radius)
+		shift_factor = self.get_motion_vec()[start_frame:end_frame,1].mean() * depth
+		self._last_result = focus(self._series[..., start_frame:end_frame], shift_factor=shift_factor)
+		return self._resize_result()
+
+
     def _calc_slice(self, move, stereo, shift=0.5):
         """
 
@@ -113,7 +123,6 @@ class Gui:
 		:param stereo:
 		:return:
 		"""
-
         angle = self._interp_move(move)
         center_frame = self._interp_shift(shift)
         # The angle doesnt match a line function so simply return intended frame as a slice
@@ -221,10 +230,6 @@ class Gui:
 
             res = (int(round(x0)), int(round(y0))), (int(round(xn)), int(round(yn)))
         return res
-
-    def focus(self, depth):
-        self._last_result = focus(self._series, shift_factor=depth)
-        return self._resize_result()
 
     def get_last_result(self, resized=True):
         if resized:

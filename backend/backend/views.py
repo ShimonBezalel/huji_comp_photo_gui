@@ -21,7 +21,7 @@ test_cache = Cache()
 # p = os.path.join("sample_data", example)
 #
 # test_cache.setup(series_path=p, suffix=suffix, extension="jpg", zero_index=True, height=500, width=900)
-#
+
 example = "apples"
 suffix = 'APPLE'
 p = os.path.join("sample_data", example)
@@ -55,8 +55,18 @@ def upload_images(request):
         return response
     return HttpResponse('')
 
+@csrf_exempt
+def slice(request):
+    shift = float(request.GET.get('shift'))
+    move = float(request.GET.get('move'))
+    stereo = float(request.GET.get('stereo'))
 
+    print("Calc Slice - move: {} stereo: {} shift: {}".format(move, stereo, shift))
 
+    slice = test_cache._calc_slice(move, stereo, shift)
+    raw = [int(i) for i in [slice[0][0], slice[0][1], slice[1][0], slice[1][1]]]
+
+    return JsonResponse({'slice': raw})
 
 def focus(request):
     res = test_cache.get_last_result()
@@ -77,9 +87,11 @@ def viewpoint(request):
     try:
         res: np.ndarray = test_cache.get_last_result()
         try:
-            slice = request.GET.get('slice')
-            if slice not in [None, "", "()", "((),())", (), []]:
-                print("Viewpoint - slice {}".format(slice))
+            slice_raw = request.GET.get('slice')
+            if slice_raw not in [None, "", "()", "((),())", (), []]:
+                print("Viewpoint - slice {}".format(slice_raw))
+                inputs = [int(i) for i in slice_raw.split(",")]
+                slice = (inputs[0], inputs[1]), (inputs[2], inputs[3])
 
                 res = test_cache.viewpoint(slice=slice)
             else:
@@ -98,7 +110,6 @@ def viewpoint(request):
         # path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE001.jpg')
 
 
-    # load images to director
     except Exception as e:
         print(e)
         response = HttpResponse('')

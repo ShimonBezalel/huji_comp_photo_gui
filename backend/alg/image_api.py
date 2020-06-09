@@ -68,7 +68,7 @@ class Gui:
             if save_pickle:
                 with open(pickle_path, 'wb') as f:
                     self._motion_flow = calculate_motion3(self._series)
-                    pickle.dump(self._motion_vec, f)
+                    pickle.dump(self._motion_flow, f)
         else:
             self._motion_flow = calculate_motion3(self._series)
         self._motion_vec = []

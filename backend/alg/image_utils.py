@@ -108,7 +108,7 @@ def focus(im_series, shift_factor, depth=None):
 	a_ext = np.concatenate((p, im_series, p), axis=1)
 	y, x, c, s = im_series.shape
 	v = view_as_windows(a_ext, (y, x, c, 1))
-	shift_vec = np.linspace(start=(-np.floor(s / 2)) * shift_factor, stop=(np.ceil(s / 2) - 1) * shift_facter, num=s)
+	shift_vec = np.linspace(start=(-np.floor(s / 2)) * shift_factor, stop=(np.ceil(s / 2) - 1) * shift_factor, num=s)
 	ser = v[0, shift_vec.astype(int) - x, 0, np.arange(s)]
 	shifted_series = np.transpose(np.squeeze(ser), (1, 2, 3, 0))
 	im = np.median(shifted_series, axis=-1)

@@ -26,4 +26,5 @@ urlpatterns = [
     url(r'focus.*$', views.focus),
     url(r'viewpoint.*$', views.viewpoint),
     url(r'motion.*$', views.motion),
+    url(r'slice.*$', views.slice)
 ]

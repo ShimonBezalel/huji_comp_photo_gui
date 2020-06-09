@@ -97,7 +97,11 @@ function setup_sliders() {
 
         await request_focus();
 
-    })
+    });
+    const slice_inputs = $("[id*=-slice-input-]");
+    slice_inputs.change(async function (e) {
+        await request_slice();
+    });
 
 
 }
@@ -176,42 +180,76 @@ async function request_motion() {
         );
 }
 
+async function request_slice() {
+    const frame_start = $('#viewpoint-slice-input-start-frame').val();
+    const col_start = $('#viewpoint-slice-input-start-column').val();
+    const frame_end = $('#viewpoint-slice-input-end-frame').val();
+    const col_end = $('#viewpoint-slice-input-end-column').val();
+    const slice = [[frame_start, col_start], [frame_end, col_end]].toString();
+
+
+    const url = new URL(SERVER_HOST + 'viewpoint/');
+
+    url.searchParams.append('slice', slice);
+
+    console.log("Stitch/Slice Request: " + url.href);
+
+
+    const canvas = $('#canvas-live-render');
+    canvas.attr('src', url.href);
+}
+
 async function request_stitch() {
     const shift_value = $('#viewpoint-direct-shift').val();
     const move_value = $('#viewpoint-direct-move').val();
     const stereo_value = $('#viewpoint-direct-stereo').val();
 
-    const url = new URL(SERVER_HOST + 'viewpoint/');
-    console.log(url.href);
+    const viewpoint_url = new URL(SERVER_HOST + 'viewpoint/');
 
-    url.searchParams.append('shift', shift_value ? shift_value : 0.5);
-    url.searchParams.append('move', move_value ? move_value : 0);
-    url.searchParams.append('stereo', stereo_value? stereo_value : 0);
-    console.log("Stitch/Viewpoint Request: "+ url.href);
+    viewpoint_url.searchParams.append('shift', shift_value ? shift_value : 0.5);
+    viewpoint_url.searchParams.append('move', move_value ? move_value : 0);
+    viewpoint_url.searchParams.append('stereo', stereo_value? stereo_value : 0);
+    console.log("Stitch/Viewpoint Request: "+ viewpoint_url.href);
 
 
     const canvas = $('#canvas-live-render');
-    canvas.attr('src', url.href);
+    canvas.attr('src', viewpoint_url.href);
 
-    // const options = {
-    //   method: 'GET'
-    // };
-    // const request = new Request(url.href, options);
-    //
-    //
-    // await fetch(request)
-    //   .then(response => {
-    //     if (response.status === 200) {
-    //         return response.json();
-    //     } else {
-    //         console.error(response);
-    //       throw new Error('Something went wrong on api server!');
-    //     }
-    //   }).then(json => json['body']['image']
-    //     ).then(
-    //         im => console.log(im)
-    //         //todo: use image
-    //     );
+    const slice_url = new URL(SERVER_HOST + 'slice/');
+
+    slice_url.searchParams.append('shift', shift_value ? shift_value : 0.5);
+    slice_url.searchParams.append('move', move_value ? move_value : 0);
+    slice_url.searchParams.append('stereo', stereo_value? stereo_value : 0);
+    console.log("Slice Request: "+ slice_url.href);
+
+    const request = new Request(slice_url.href);
+    const options = {
+      method: 'GET'
+    };
+
+    await fetch(request, options)
+      .then(response => {
+        if (response.status === 200) {
+            return response.json();
+        } else {
+            console.error(response);
+          throw new Error('Something went wrong on api server!');
+        }
+      }).then( json => {
+            const raw = json['slice'];
+            const frame_start = raw[0];
+            const col_start = raw[1];
+            const frame_end = raw[2];
+            const col_end = raw[3];
+            $('#viewpoint-slice-input-start-frame').val(frame_start);
+            $('#viewpoint-slice-input-start-column').val(col_start);
+            $('#viewpoint-slice-input-end-frame').val(frame_end);
+            $('#viewpoint-slice-input-end-column').val(col_end);
+      }
+
+        );
+
+
 
 }
 
@@ -229,23 +267,6 @@ async function request_focus() {
     const canvas = $('#canvas-live-render');
     canvas.attr('src', url.href);
 
-    // const request = new Request(url.href, options);
-    //
-    //
-    // await fetch(request)
-    //   .then(response => {
-    //     if (response.status === 200) {
-    //         return response.blob();
-    //     } else {
-    //         console.error(response);
-    //       throw new Error('Something went wrong on api server!');
-    //     }
-    //   }).then(blobRes => {
-    //       console.log(blobRes);
-    //       var outputImg = document.createElement('img');
-    //       outputImg.src = 'data:image/jpeg;'+blobRes;
-    //   }
-    //     );
 }
 
 async function request_upload() {
@@ -277,4 +298,5 @@ async function request_upload() {
 
 
 }
+
 

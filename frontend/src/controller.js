@@ -1,4 +1,4 @@
-// import {SENSITIVITY_VAL} from "./constants";
+
 const FAST_STEP = 0.5;
 const SLOW_STEP = 0.05;
 
@@ -145,6 +145,8 @@ async function request_motion() {
             //todo: use image
         );
 }
+
+request_motion();
 
 async function request_stitch() {
     const shift_value = $('#viewpoint-direct-shift').val();

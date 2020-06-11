@@ -18,6 +18,8 @@ FACTOR_MIN = 1
 
 DEBUG = True
 
+EPSILON = 0.00001
+
 
 def open_series(path, suffix="", extension="jpg", zero_index=False):
 	for root, dirs, files in os.walk(path):
@@ -26,7 +28,7 @@ def open_series(path, suffix="", extension="jpg", zero_index=False):
 		t = time.time()
 		first, last = (0, k) if zero_index else (1, k + 1)
 		all_images = [plt.imread(os.path.join(path, file_format.format(suffix, i, extension)), format=extension)
-		              for i in range(first, last)]
+					  for i in range(first, last)]
 		print("Read {} images in {} s".format(k, time.time() - t))
 		im_series = np.stack(all_images, axis=-1)
 		im_series = im_series / np.max(im_series)
@@ -69,29 +71,46 @@ def stitch(im_series, slice, avg_motion=3):
 		return im_series[..., f_start]
 	assert f_start < f_end
 	factor = estimate_factor(im_series.shape[1], f_end - f_start,
-	                         c_end - c_start)  # todo: What is the result shape? Same as frame 1
+							 c_end - c_start)  # todo: What is the result shape? Same as frame 1
 	slice_width = np.abs(np.round(avg_motion * factor))
 	number_of_frames = f_end - f_start
 	number_of_columns = c_end - c_start
 
-	input_image_shape = im_series[..., 0].shape
+	h, w, c = im_series[..., 0].shape
 	# result_shape = (input_image_shape[0], int(max(number_of_frames, number_of_columns) * factor), input_image_shape[2])
-	result_shape = (input_image_shape[0], int(number_of_frames * slice_width), input_image_shape[2])
+	result_shape = (h, int(number_of_frames * slice_width), c)
 	result_image = np.zeros(shape=result_shape)
-	cols = np.linspace(c_start, c_end, result_shape[1])  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
-	cols_right = np.ceil(cols).astype(np.int)  # ie [ 3, 3, 3, 4 , ...]
-	cols_right_weights = cols - cols_right  # ie [ 0.3, 0.4, 0.9, 0.2 , ...]
+
+	slice_range = np.arange(-slice_width // 2 + 1, slice_width // 2 + 1)
+	frame_grid, col_grid = np.meshgrid(np.arange(f_start, f_end), slice_range, indexing='ij')
+
+	cols = np.linspace(c_start + EPSILON, c_end - EPSILON, number_of_frames)[..., np.newaxis]  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
+	# slices = np.repeat(np.arange(0, slice_width)[..., np.newaxis], number_of_frames, axis=-1)
+
+	cols_right = np.ceil(cols)  # ie [ 3, 3, 3, 4 , ...]
+	cols_right_weights = cols_right - cols  # ie [ 0.3, 0.4, 0.9, 0.2 , ...]
 
 	cols_left = np.floor(cols).astype(np.int)  # ie [ 2, 2, 2, 3 , ...]
 	cols_left_weights = 1 - cols_right_weights  # ie [ 0.7, 0.6, 0.1, 0.8 , ...]
 
-	frame_indices = np.repeat(np.arange(f_start, f_end)[..., np.newaxis], slice_width, axis=-1).flatten()
+	frame_indices = frame_grid.flatten().astype(
+		np.int)  # np.repeat(np.arange(f_start, f_end)[..., np.newaxis], slice_width, axis=-1).flatten()
 
-	pixels_right = im_series[::, cols_right, ::, frame_indices]
-	pixels_left = im_series[::, cols_left.reshape(frame_indices.shape), ::, frame_indices]
-	result_image[::, np.arange(result_shape[1]), ::] = np.swapaxes(
-		pixels_right * cols_right_weights[..., np.newaxis, np.newaxis] +
-		pixels_left * cols_left_weights[..., np.newaxis, np.newaxis], 0, 1)
+	right_col_indexes = np.clip((cols_right + col_grid).flatten().astype(np.int), 0, w - 1)
+	left_col_indexes = np.clip((cols_left + col_grid).flatten().astype(np.int), 0, w - 1)
+
+	# Some cols may be out of image bounds, so we pad so they are still sampled safely.
+	# safely_padded_series = np.pad(
+	# 	im_series, ((0,0), (int(slice_width), int(slice_width)), (0, 0), (0, 0)), mode='constant')
+
+	pixels_right = im_series[::, right_col_indexes, ::, frame_indices]
+	pixels_left = im_series[::, left_col_indexes, ::, frame_indices]
+	weighted_res = pixels_right.transpose() * np.repeat(cols_right_weights, slice_width) \
+				   + \
+				   pixels_left.transpose() * np.repeat(cols_left_weights, slice_width)
+
+	# result_image[::, np.arange(result_shape[1]), ::] =
+	result_image = np.moveaxis(weighted_res, 0, 2)
 	return result_image
 
 

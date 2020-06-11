@@ -2,8 +2,12 @@ from .image_utils import *
 import numpy as np
 from memoized import memoized
 from skimage.transform.pyramids import pyramid_gaussian
-from skimage.transform import rescale, resize
+from skimage.transform import rescale, resize, AffineTransform
+
+
 import pickle
+
+from skimage.transform import warp
 
 STEREO_MIN = -1
 STEREO_MAX = 1
@@ -14,6 +18,25 @@ SHIFT_MAX = 1
 
 DEBUG = True
 EPSILON = 0.001
+
+EPSILON2 = 0.0001
+
+
+def call_and_pickle(path, func, *args):
+    if DEBUG:
+        save_pickle = not os.path.exists(path)
+        if not save_pickle:
+            with open(path, 'rb') as f:
+                res = pickle.load(f)
+                save_pickle = res is None
+
+        if save_pickle:
+            with open(path, 'wb') as f:
+                res = func(*args)
+                pickle.dump(res, f)
+    else:
+        res = func(*args)
+    return res
 
 
 class Gui:
@@ -33,6 +56,7 @@ class Gui:
         self._interp_move = None
         self._interp_stereo = None
         self._interp_shift = None
+        self._aligned = None
 
     def setup(self, series_path, suffix="", extension="", height=500, width=900, zero_index=False):
         """
@@ -56,65 +80,82 @@ class Gui:
         self._last_result = self._series[..., 0]
         self._gui_live_result_height = height
         self._gui_live_result_width = width
-
-        if DEBUG:
-            pickle_path = "{}.pkl".format(suffix)
-            save_pickle = not os.path.exists(pickle_path)
-            if not save_pickle:
-                with open(pickle_path, 'rb') as f:
-                    self._motion_flow = pickle.load(f)
-                    save_pickle = self._motion_flow is None
-
-            if save_pickle:
-                with open(pickle_path, 'wb') as f:
-                    self._motion_flow = calculate_motion3(self._series)
-                    pickle.dump(self._motion_flow, f)
-        else:
-            self._motion_flow = calculate_motion3(self._series)
+        self._motion_flow = call_and_pickle('flow_{}.pkl'.format(suffix), calculate_motion3, self._series)
         self._motion_vec = []
         for frame_i in range(0, self._frames - 1):
             self._motion_vec.append(np.median(self._motion_flow[..., frame_i], axis=(1, 2)))
         self._motion_vec = np.array(self._motion_vec)
+        self._aligned = call_and_pickle('aligned_{}.pkl'.format(suffix), self._align_images)
+        # m = np.mean(self._aligned, axis=-1)
+        # plt.imshow(m / np.max(m))
+        # plt.show()
+        # for i in range(0, self._aligned.shape[-1], 10):
+        #     plt.imshow(self._aligned[..., i])
+        #     plt.show()
         self._avg_horizontal_motion = np.mean(self._motion_vec[..., 1])  # only
         self._interp_move = interp1d((-1, 1), (-(np.pi / 2), np.pi / 2))
         self._interp_stereo = interp1d((-1, 1), (0, self._cols - 1))
         self._interp_shift = interp1d((0, 1), (0, self._frames - 1))
 
     def _resize_result(self):
+        """
+        Resize the image in "last result" to fit the gui aspect ratio and pixel size, by padding with black.
+
+        GUI: Aspect ratio A_g       Res: Aspect ratio A_r  =>    Resize
+
+        Case 1: A_r > A_g
+
+         -----------                 ---------------             -----------
+        |           |               |               |           |-----------|
+        |           |               |               |           |           |
+        |           |                ---------------            |-----------|
+         -----------                                             -----------
+
+        Case 2: A_g > A_r
+
+         -----------                 ---                         -----------
+        |           |               |   |                       |   |   |   |
+        |           |               |   |                       |   |   |   |
+        |           |               |   |                       |   |   |   |
+         -----------                 ---                         -----------
+
+        Case 3: A_g = A_r
+        Simply resize
+        :return:
+        """
         h, w, c = self._last_result.shape
-        if h > w:
-            proportional_width = int((self._gui_live_result_width / h) * w)
-            resize_shape = (self._gui_live_result_height, proportional_width, 3)
-            padding = (self._gui_live_result_width - proportional_width) // 2
-            padding_widths = ((0, 0), (padding, padding), (0, 0))
-        elif w > h:
-            proportional_height = int((self._gui_live_result_height / w) * h)
+        gui_aspect_ratio = self._gui_live_result_width / self._gui_live_result_height
+        res_aspect_ratio = w / h
+
+        # Case 1
+        if gui_aspect_ratio < res_aspect_ratio:
+            proportional_height = int((self._gui_live_result_width * h) / w)
             resize_shape = (proportional_height, self._gui_live_result_width, 3)
             padding = (self._gui_live_result_height - proportional_height) // 2
-            padding_widths = ((padding, padding), (0, 0), (0, 0))
-        else:  # w == h
-            if self._gui_live_result_width > self._gui_live_result_height:
-                resize_shape = (self._gui_live_result_height, self._gui_live_result_height, 3)
-                padding = (self._gui_live_result_width - self._gui_live_result_height) // 2
-                padding_widths = ((0, 0), (padding, padding), (0, 0))
-            else:
-                resize_shape = (self._gui_live_result_width, self._gui_live_result_width, 3)
-                padding = (self._gui_live_result_height - self._gui_live_result_width) // 2
-                padding_widths = ((padding, padding), (0, 0), (0, 0))
+            padding_dims = ((padding, padding), (0, 0), (0, 0))
+        # Case 2
+        elif gui_aspect_ratio > res_aspect_ratio:
+            proportional_width = int((self._gui_live_result_height * w) / h)
+            resize_shape = (self._gui_live_result_height, proportional_width, 3)
+            padding = (self._gui_live_result_width - proportional_width) // 2
+            padding_dims = ((0, 0), (padding, padding), (0, 0))
+        # Case 3
+        else:  # gui_aspect_ratio == res_aspect_ratio
+            resize_shape = (self._gui_live_result_height, self._gui_live_result_width, 3)
+            padding_dims = ((0, 0), (0, 0), (0, 0))
+
 
         resized = resize(self._last_result, output_shape=resize_shape)
-        output = np.pad(resized, pad_width=padding_widths, mode='constant')
+        output = np.pad(resized, pad_width=padding_dims, mode='constant')
         return output
 
-
     def focus(self, depth, center, radius):
-		rows, columns, chanels, frames = self._series.shape
-		start_frame = max(0, center - radius)
-		end_frame = min(columns, center + radius)
-		shift_factor = self.get_motion_vec()[start_frame:end_frame,1].mean() * depth
-		self._last_result = focus(self._series[..., start_frame:end_frame], shift_factor=shift_factor)
-		return self._resize_result()
-
+        rows, columns, chanels, frames = self._series.shape
+        start_frame = max(0, center - radius)
+        end_frame = min(columns, center + radius)
+        shift_factor = self.get_motion_vec()[start_frame:end_frame, 1].mean() * depth
+        self._last_result = focus(self._series[..., start_frame:end_frame], shift_factor=shift_factor)
+        return self._resize_result()
 
     def _calc_slice(self, move, stereo, shift=0.5):
         """
@@ -197,9 +238,9 @@ class Gui:
 			o----> frames (Y)
 
 			"""
-            y0 = min(max(y(0), 0), self._cols - 1)
+            y0 = min(max(y(0), 0 + EPSILON2), self._cols - 1 - EPSILON2)
             x0 = x(y0)
-            yn = min(max(y(self._frames - 1), 0), self._cols - 1)
+            yn = min(max(y(self._frames - 1), 0 + EPSILON2), self._cols - 1 - EPSILON2)
             xn = x(yn)
 
             if x0 < 0:
@@ -265,8 +306,8 @@ class Gui:
             for col in (c_start, c_end):
                 assert (0 <= col < self._cols)
 
-        r = stitch(self._series, slice=slice, avg_motion=self._avg_horizontal_motion)
-        self._last_result = (r - r.min()) / (np.ptp(r))
+        r = stitch(self._aligned, slice=slice, avg_motion=self._avg_horizontal_motion)
+        self._last_result = r # (r - r.min()) / (np.ptp(r))
         return self._resize_result()
 
     def get_motion_vec(self):
@@ -274,3 +315,31 @@ class Gui:
 
     def get_motion_avg(self):
         return self._avg_horizontal_motion
+
+    def _align_images(self, align_rows=True, align_cols=False):
+        t = time.time()
+        if align_rows or align_cols:
+            print("Aligning {} {}".format("rows" if align_rows else "", "cols" if align_cols else ""))
+
+            row_coords, col_coords, channel_coords, frame_coords = \
+                np.meshgrid(np.arange(self._rows), np.arange(self._cols), np.arange(self._channels), np.arange(self._frames-1),
+                                                 indexing='ij')
+            vec_cum_sum = np.cumsum(self._motion_vec, axis=0)
+            relative_vec = (vec_cum_sum - np.flip(vec_cum_sum, axis=0)) / 2
+
+            if align_rows:
+                row_coords = row_coords + relative_vec[..., 0]
+            if align_cols:
+                col_coords = col_coords + relative_vec[..., 1]
+
+            coords = np.array((row_coords, col_coords, channel_coords, frame_coords))
+            res = warp(self._series, coords)
+
+        else:
+            print("Nothing to align.".format())
+            res = self._series.copy()
+
+        print("Aligned images in {}".format(round(time.time() - t, 2)))
+        return res
+
+

@@ -124,8 +124,30 @@ def viewpoint(request):
 def motion(request):
     try:
         motion_vec = np.round(test_cache.get_motion_vec(), 3).tolist()
-        s = pprint.pformat(motion_vec, indent=4)
-        return JsonResponse({'motion_vector': motion_vec, 'as_string': s})
+        payload = {'motion_vector': motion_vec}
+
+        should_add_string = request.GET.get('add_string', default=False)
+        if (should_add_string is not False) or should_add_string == 'true' or should_add_string == 'True' or \
+                should_add_string == '1' or int(should_add_string) > 0:
+            s = pprint.pformat(motion_vec, indent=4)
+            payload['as_string'] = s
+
+        return JsonResponse(payload)
+
+    # load images to director
+    except:
+        response = HttpResponse('')
+        response.status_code = 400
+        return response
+
+
+def save(request):
+    try:
+        res = test_cache.get_last_result(resized=False)
+        plt.imsave("tmp.jpeg", res)
+        with open("tmp.jpeg", 'rb') as f:
+            return HttpResponse(f.read(), content_type="image/jpeg")
+
 
     # load images to director
     except:

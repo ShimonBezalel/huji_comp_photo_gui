@@ -106,11 +106,31 @@ function setup_sliders() {
 
 }
 
+async function request_save() {
+    const url = new URL(SERVER_HOST + 'save/');
+
+    // const options = {
+    //     method: 'GET'
+    // };
+    console.log($('#file-save-link'));
+
+    // const fileName = "foo.jpeg"; //if you have the fileName header available
+    // const link=document.createElement('a');
+    // link.href=url.href;
+    // link.download=fileName;
+    // link.target = '_blank';
+    // link.click();
+}
+
 function setup_controllers() {
     const modal = $("#modal-file-upload");
     $("#file-button-upload").click(
         (e) => modal.fadeIn('fast')
     );
+    // logic moved to button itself
+    $("#file-button-save").attr('href', new URL(SERVER_HOST + 'save/').href);
+    $("#motion-button-save").attr('href', new URL(SERVER_HOST + 'motion/').href);
+
     $(".custom-file-input").on("change", function(e) {
         const fileNames = Array.from(e.target.files).map(f => f.name).join(", ");
       $(this).siblings(".custom-file-label").addClass("selected").html(fileNames);
@@ -155,6 +175,7 @@ setup_controllers();
 
 async function request_motion() {
     const url = new URL(SERVER_HOST + 'motion/');
+    url.searchParams.append('add_string', true.toString());
 
     const options = {
       method: 'GET'
@@ -165,7 +186,9 @@ async function request_motion() {
     await fetch(request)
       .then(response => {
         if (response.status === 200) {
-            return response.json();
+            const j = response.json();
+            console.log(j);
+            return j;
         } else {
             console.error(response);
           throw new Error('Something went wrong on api server!');

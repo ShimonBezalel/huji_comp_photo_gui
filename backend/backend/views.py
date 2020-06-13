@@ -7,7 +7,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 import zipfile
-
+import shutil
 from backend import settings
 from backend.settings import BASE_DIR
 import random
@@ -35,22 +35,27 @@ def test(request):
 
 @csrf_exempt
 def upload_images(request):
+    global cache
     file = request.FILES["images"]
     try:
         if not file:
             raise ValueError
+        shutil.rmtree(settings.IMAGES_DIR)
         with zipfile.ZipFile(file, 'r') as zip_ref:
             zip_ref.extractall(settings.IMAGES_DIR)
-        file_list = os.listdir(settings.IMAGES_DIR).sort()
+        path = os.path.join(settings.IMAGES_DIR, os.listdir(settings.IMAGES_DIR)[0])
+        file_list =  os.listdir(path)
+        file_list.sort()
+        file_format = "{:03d}.jpg" if len(file_list)> 100 else "{:02d}.jpg"
         for count, filename in enumerate(file_list):
-            file_format = "{:03d}.jpg" if count > 100 else "{:02d}.jpg"
-            os.rename(filename, file_format.format(count))
+            os.rename(os.path.join(path, filename), os.path.join(path, file_format.format(count+1)))
         cache = Cache()
-        cache.setup(series_path=settings.IMAGES_DIR)
+        cache.setup(series_path=path)
+        return JsonResponse({'rows': cache._rows,'cols':  cache._cols,'channels': cache._channels,'frames': cache._frames})
     # load images to directory
 
-    except:
-        response = HttpResponse(request.request.FILES)
+    except Exception as e :
+        response = HttpResponse(str(e))
         response.status_code = 400
         return response
     return HttpResponse('')

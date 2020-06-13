@@ -58,7 +58,7 @@ class Gui:
         self._interp_shift = None
         self._aligned = None
 
-    def setup(self, series_path, suffix="", extension="", height=500, width=900, zero_index=False):
+    def setup(self, series_path, suffix="", extension="jpg", height=500, width=900, zero_index=False):
         """
 
 		:param extension:

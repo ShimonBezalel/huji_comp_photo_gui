@@ -14,20 +14,20 @@ import random
 
 from alg.image_api import Gui as Cache, open_series
 
-test_cache = Cache()
-cache = None
-example = "EmekRefaim"
-suffix = 'hillel11_long_sdepth_ax18'
-p = os.path.join("sample_data", example)
 
-test_cache.setup(series_path=p, suffix=suffix, extension="jpg", zero_index=True, height=500, width=900)
+# cache = None
+# example = "EmekRefaim"
+# suffix = 'hillel11_long_sdepth_ax18'
+# p = os.path.join("sample_data", example)
+#
+# test_cache.setup(series_path=p, suffix=suffix, extension="jpg", zero_index=True, height=500, width=900)
 #
 # example = "apples"
 # suffix = 'APPLE'
 # p = os.path.join("sample_data", example)
 #
-# test_cache.setup(series_path=p, suffix=suffix, extension="jpg", height=500, width=900)
-
+# cache.setup(series_path=p, suffix=suffix, extension="jpg", height=500, width=900)
+cache = None
 
 def test(request):
     return HttpResponse("<html><body>Reached test!</body></html>")
@@ -69,14 +69,14 @@ def slice(request):
 
     print("Calc Slice - move: {} stereo: {} shift: {}".format(move, stereo, shift))
 
-    slice = test_cache._calc_slice(move, stereo, shift)
+    slice = cache._calc_slice(move, stereo, shift)
     raw = [int(i) for i in [slice[0][0], slice[0][1], slice[1][0], slice[1][1]]]
 
     return JsonResponse({'slice': raw})
 
 
 def focus(request):
-    res = test_cache.get_last_result()
+    res = cache.get_last_result()
     try:
         depth = request.GET.get('depth')
         center = int(request.GET.get('center'))
@@ -84,7 +84,7 @@ def focus(request):
         depth = float(depth)
         # path = os.path.join(BASE_DIR, 'sample_data', 'apples', 'APPLE{:03d}.jpg'.format(int(value * 200)))
 
-        res = test_cache.focus(depth, center, radius)
+        res = cache.focus(depth, center, radius)
     except Exception as e:
         print(e)
     plt.imsave("tmp.jpeg", res)
@@ -94,7 +94,7 @@ def focus(request):
 
 def viewpoint(request):
     try:
-        res: np.ndarray = test_cache.get_last_result()
+        res: np.ndarray = cache.get_last_result()
         try:
             slice_raw = request.GET.get('slice')
             if slice_raw not in [None, "", "()", "((),())", (), []]:
@@ -102,14 +102,14 @@ def viewpoint(request):
                 inputs = [int(i) for i in slice_raw.split(",")]
                 slice = (inputs[0], inputs[1]), (inputs[2], inputs[3])
 
-                res = test_cache.viewpoint(slice=slice)
+                res = cache.viewpoint(slice=slice)
             else:
                 shift = float(request.GET.get('shift'))
                 move = float(request.GET.get('move'))
                 stereo = float(request.GET.get('stereo'))
                 print("Viewpoint - move: {} stereo: {} shift: {}".format(move, stereo, shift))
 
-                res = test_cache.viewpoint(shift=shift, move=move, stereo=stereo)
+                res = cache.viewpoint(shift=shift, move=move, stereo=stereo)
         except Exception as e:
             print(e)
 
@@ -128,7 +128,7 @@ def viewpoint(request):
 
 def motion(request):
     try:
-        motion_vec = np.round(test_cache.get_motion_vec(), 3).tolist()
+        motion_vec = np.round(cache.get_motion_vec(), 3).tolist()
         payload = {'motion_vector': motion_vec}
 
         should_add_string = request.GET.get('add_string', default=False)
@@ -148,7 +148,7 @@ def motion(request):
 
 def save(request):
     try:
-        res = test_cache.get_last_result(resized=False)
+        res = cache.get_last_result(resized=False)
         plt.imsave("tmp.jpeg", res)
         with open("tmp.jpeg", 'rb') as f:
             return HttpResponse(f.read(), content_type="image/jpeg")

@@ -4,7 +4,6 @@ from memoized import memoized
 from skimage.transform.pyramids import pyramid_gaussian
 from skimage.transform import rescale, resize, AffineTransform
 
-
 import pickle
 
 from skimage.transform import warp
@@ -23,43 +22,43 @@ EPSILON2 = 0.0001
 
 
 def call_and_pickle(path, func, *args):
-    if DEBUG:
-        save_pickle = not os.path.exists(path)
-        if not save_pickle:
-            with open(path, 'rb') as f:
-                res = pickle.load(f)
-                save_pickle = res is None
+	if DEBUG:
+		save_pickle = not os.path.exists(path)
+		if not save_pickle:
+			with open(path, 'rb') as f:
+				res = pickle.load(f)
+				save_pickle = res is None
 
-        if save_pickle:
-            with open(path, 'wb') as f:
-                res = func(*args)
-                pickle.dump(res, f)
-    else:
-        res = func(*args)
-    return res
+		if save_pickle:
+			with open(path, 'wb') as f:
+				res = func(*args)
+				pickle.dump(res, f)
+	else:
+		res = func(*args)
+	return res
 
 
 class Gui:
 
-    def __init__(self):
-        self._series = None
-        self._rows, self._cols, self._channels, self._frames = None, None, None, None
-        self._gray_scale_series = None
-        self._pyramid = None
-        self._gray_scale_pyramid = None
-        self._last_result = None
-        self._gui_live_result_height = None
-        self._gui_live_result_width = None
-        self._motion_flow = None
-        self._motion_vec = None
-        self._avg_horizontal_motion = None
-        self._interp_move = None
-        self._interp_stereo = None
-        self._interp_shift = None
-        self._aligned = None
+	def __init__(self):
+		self._series = None
+		self._rows, self._cols, self._channels, self._frames = None, None, None, None
+		self._gray_scale_series = None
+		self._pyramid = None
+		self._gray_scale_pyramid = None
+		self._last_result = None
+		self._gui_live_result_height = None
+		self._gui_live_result_width = None
+		self._motion_flow = None
+		self._motion_vec = None
+		self._avg_horizontal_motion = None
+		self._interp_move = None
+		self._interp_stereo = None
+		self._interp_shift = None
+		self._aligned = None
 
-    def setup(self, series_path, suffix="", extension="jpg", height=500, width=900, zero_index=False):
-        """
+	def setup(self, series_path, suffix="", extension="jpg", height=500, width=900, zero_index=False):
+		"""
 
 		:param extension:
 		:param suffix:
@@ -69,123 +68,125 @@ class Gui:
 		:param zero_index:
 
 		"""
-        self._series = open_series(series_path, suffix=suffix, extension=extension, zero_index=zero_index)
-        if self._series is None:
-            print("Series is empty")
-            return
-        self._rows, self._cols, self._channels, self._frames = self._series.shape
-        self._gray_scale_series = rgb2gray_series(self._series)
-        self._pyramid = pyramid_gaussian(self._series, downscale=2, multichannel=True)
-        self._gray_scale_pyramid = pyramid_gaussian(self._gray_scale_series, downscale=2, multichannel=True)
-        self._last_result = self._series[..., 0]
-        self._gui_live_result_height = height
-        self._gui_live_result_width = width
-        self._motion_flow = call_and_pickle('flow_{}.pkl'.format(suffix), calculate_motion3, self._series)
-        self._motion_vec = []
-        for frame_i in range(0, self._frames - 1):
-            self._motion_vec.append(np.median(self._motion_flow[..., frame_i], axis=(1, 2)))
-        self._motion_vec = np.array(self._motion_vec)
-        self._aligned = call_and_pickle('aligned_{}.pkl'.format(suffix), self._align_images)
-        # m = np.mean(self._aligned, axis=-1)
-        # plt.imshow(m / np.max(m))
-        # plt.show()
-        # for i in range(0, self._aligned.shape[-1], 10):
-        #     plt.imshow(self._aligned[..., i])
-        #     plt.show()
-        self._avg_horizontal_motion = np.mean(self._motion_vec[..., 1])  # only
-        self._interp_move = interp1d((-1, 1), (-(np.pi / 2), np.pi / 2))
-        self._interp_stereo = interp1d((-1, 1), (0, self._cols - 1))
-        self._interp_shift = interp1d((0, 1), (0, self._frames - 1))
+		self._series = open_series(series_path, suffix=suffix, extension=extension, zero_index=zero_index)
+		if self._series is None:
+			print("Series is empty")
+			return
+		self._rows, self._cols, self._channels, self._frames = self._series.shape
+		self._gray_scale_series = rgb2gray_series(self._series)
+		self._pyramid = pyramid_gaussian(self._series, downscale=2, multichannel=True)
+		self._gray_scale_pyramid = pyramid_gaussian(self._gray_scale_series, downscale=2, multichannel=True)
+		self._last_result = self._series[..., 0]
+		self._gui_live_result_height = height
+		self._gui_live_result_width = width
+		self._motion_flow = call_and_pickle('flow_{}.pkl'.format(suffix), calculate_motion3, self._series)
+		self._motion_vec = []
+		for frame_i in range(0, self._frames - 1):
+			self._motion_vec.append(np.median(self._motion_flow[..., frame_i], axis=(1, 2)))
+		self._motion_vec = np.array(self._motion_vec)
+		self._aligned = call_and_pickle('aligned_{}.pkl'.format(suffix), self._align_images)
+		self._aligned_row_cols = call_and_pickle('aligned_row_cols_{}.pkl'.format(suffix), self._align_images,
+		                                         True, True)
+		# m = np.mean(self._aligned, axis=-1)
+		# plt.imshow(m / np.max(m))
+		# plt.show()
+		# for i in range(0, self._aligned.shape[-1], 10):
+		#     plt.imshow(self._aligned[..., i])
+		#     plt.show()
+		self._avg_horizontal_motion = np.mean(self._motion_vec[..., 1])  # only
+		self._interp_move = interp1d((-1, 1), (-(np.pi / 2), np.pi / 2))
+		self._interp_stereo = interp1d((-1, 1), (0, self._cols - 1))
+		self._interp_shift = interp1d((0, 1), (0, self._frames - 1))
 
-    def _resize_result(self):
-        """
-        Resize the image in "last result" to fit the gui aspect ratio and pixel size, by padding with black.
+	def _resize_result(self):
+		"""
+		Resize the image in "last result" to fit the gui aspect ratio and pixel size, by padding with black.
 
-        GUI: Aspect ratio A_g       Res: Aspect ratio A_r  =>    Resize
+		GUI: Aspect ratio A_g       Res: Aspect ratio A_r  =>    Resize
 
-        Case 1: A_r > A_g
+		Case 1: A_r > A_g
 
-         -----------                 ---------------             -----------
-        |           |               |               |           |-----------|
-        |           |               |               |           |           |
-        |           |                ---------------            |-----------|
-         -----------                                             -----------
+		 -----------                 ---------------             -----------
+		|           |               |               |           |-----------|
+		|           |               |               |           |           |
+		|           |                ---------------            |-----------|
+		 -----------                                             -----------
 
-        Case 2: A_g > A_r
+		Case 2: A_g > A_r
 
-         -----------                 ---                         -----------
-        |           |               |   |                       |   |   |   |
-        |           |               |   |                       |   |   |   |
-        |           |               |   |                       |   |   |   |
-         -----------                 ---                         -----------
+		 -----------                 ---                         -----------
+		|           |               |   |                       |   |   |   |
+		|           |               |   |                       |   |   |   |
+		|           |               |   |                       |   |   |   |
+		 -----------                 ---                         -----------
 
-        Case 3: A_g = A_r
-        Simply resize
-        :return:
-        """
-        h, w, c = self._last_result.shape
-        gui_aspect_ratio = self._gui_live_result_width / self._gui_live_result_height
-        res_aspect_ratio = w / h
+		Case 3: A_g = A_r
+		Simply resize
+		:return:
+		"""
+		h, w, c = self._last_result.shape
+		gui_aspect_ratio = self._gui_live_result_width / self._gui_live_result_height
+		res_aspect_ratio = w / h
 
-        # Case 1
-        if gui_aspect_ratio < res_aspect_ratio:
-            proportional_height = int((self._gui_live_result_width * h) / w)
-            resize_shape = (proportional_height, self._gui_live_result_width, 3)
-            padding = (self._gui_live_result_height - proportional_height) // 2
-            padding_dims = ((padding, padding), (0, 0), (0, 0))
-        # Case 2
-        elif gui_aspect_ratio > res_aspect_ratio:
-            proportional_width = int((self._gui_live_result_height * w) / h)
-            resize_shape = (self._gui_live_result_height, proportional_width, 3)
-            padding = (self._gui_live_result_width - proportional_width) // 2
-            padding_dims = ((0, 0), (padding, padding), (0, 0))
-        # Case 3
-        else:  # gui_aspect_ratio == res_aspect_ratio
-            resize_shape = (self._gui_live_result_height, self._gui_live_result_width, 3)
-            padding_dims = ((0, 0), (0, 0), (0, 0))
+		# Case 1
+		if gui_aspect_ratio < res_aspect_ratio:
+			proportional_height = int((self._gui_live_result_width * h) / w)
+			resize_shape = (proportional_height, self._gui_live_result_width, 3)
+			padding = (self._gui_live_result_height - proportional_height) // 2
+			padding_dims = ((padding, padding), (0, 0), (0, 0))
+		# Case 2
+		elif gui_aspect_ratio > res_aspect_ratio:
+			proportional_width = int((self._gui_live_result_height * w) / h)
+			resize_shape = (self._gui_live_result_height, proportional_width, 3)
+			padding = (self._gui_live_result_width - proportional_width) // 2
+			padding_dims = ((0, 0), (padding, padding), (0, 0))
+		# Case 3
+		else:  # gui_aspect_ratio == res_aspect_ratio
+			resize_shape = (self._gui_live_result_height, self._gui_live_result_width, 3)
+			padding_dims = ((0, 0), (0, 0), (0, 0))
 
+		resized = resize(self._last_result, output_shape=resize_shape)
+		output = np.pad(resized, pad_width=padding_dims, mode='constant')
+		return output
 
-        resized = resize(self._last_result, output_shape=resize_shape)
-        output = np.pad(resized, pad_width=padding_dims, mode='constant')
-        return output
+	def focus(self, depth, center, radius):
+		rows, columns, chanels, frames = self._series.shape
+		start_frame, end_frame = max(0, center - radius), min(columns, center + radius)
+		shift_factor = self.get_motion_vec()[start_frame:end_frame, 1].mean() * depth
+		shift_factor = depth
+		self._last_result = focus(self._aligned_row_cols
+		                          [..., start_frame:end_frame], shift_factor=shift_factor)
+		return self._resize_result()
 
-    def focus(self, depth, center, radius):
-        rows, columns, chanels, frames = self._series.shape
-        start_frame = max(0, center - radius)
-        end_frame = min(columns, center + radius)
-        shift_factor = self.get_motion_vec()[start_frame:end_frame, 1].mean() * depth
-        self._last_result = focus(self._series[..., start_frame:end_frame], shift_factor=shift_factor)
-        return self._resize_result()
-
-    def _calc_slice(self, move, stereo, shift=0.5):
-        """
+	def _calc_slice(self, move, stereo, shift=0.5):
+		"""
 
 		:param move:
 		:param stereo:
 		:return:
 		"""
-        angle = self._interp_move(move)
-        center_frame = self._interp_shift(shift)
-        # The angle doesnt match a line function so simply return intended frame as a slice
-        # | Vertical
-        if np.abs(np.abs(angle) - np.pi / 2) < EPSILON:
-            # first to last col in the same frame
-            frame = np.round(center_frame).astype(np.int)
-            return (frame, 0), (frame, self._cols - 1)
-        center_col = self._interp_stereo(stereo)
+		angle = self._interp_move(move)
+		center_frame = self._interp_shift(shift)
+		# The angle doesnt match a line function so simply return intended frame as a slice
+		# | Vertical
+		if np.abs(np.abs(angle) - np.pi / 2) < EPSILON:
+			# first to last col in the same frame
+			frame = np.round(center_frame).astype(np.int)
+			return (frame, 0), (frame, self._cols - 1)
+		center_col = self._interp_stereo(stereo)
 
-        # --- Horizontal
-        if (np.abs(angle)) < EPSILON:
-            # first to last frame, same col
-            col = np.round(center_col).astype(np.int)
-            return (0, col), (self._frames - 1, col)
+		# --- Horizontal
+		if (np.abs(angle)) < EPSILON:
+			# first to last frame, same col
+			col = np.round(center_col).astype(np.int)
+			return (0, col), (self._frames - 1, col)
 
-        # y = mx + b
-        angle_pixels = np.tan(angle)
-        ratio = self._cols / self._frames
-        y = lambda x: angle_pixels * (x - center_frame) + center_col
-        x = lambda y: ((y - center_col) / angle_pixels) + center_frame
-        """
+		# y = mx + b
+		angle_pixels = np.tan(angle)
+		ratio = self._cols / self._frames
+		y = lambda x: angle_pixels * (x - center_frame) + center_col
+		x = lambda y: ((y - center_col) / angle_pixels) + center_frame
+		"""
 		CASE 1:  Sharp angle
 
 			  x = 0               x = frames-1
@@ -201,29 +202,29 @@ class Gui:
 
 		"""
 
-        if np.abs(angle_pixels) > ratio:
-            x0 = min(max(x(0), 0), self._frames - 1)
-            y0 = y(x0)
-            xn = min(max(x(self._cols - 1), 0), self._frames - 1)
-            yn = y(xn)
-            res = (int(round(x0)), int(round(y0))), (int(round(xn)), int(round(yn)))
+		if np.abs(angle_pixels) > ratio:
+			x0 = min(max(x(0), 0), self._frames - 1)
+			y0 = y(x0)
+			xn = min(max(x(self._cols - 1), 0), self._frames - 1)
+			yn = y(xn)
+			res = (int(round(x0)), int(round(y0))), (int(round(xn)), int(round(yn)))
 
-            # if x0 < 0:
-            #     x0 = 0
-            #     y0 = y(x0)
-            # if xn < 0:
-            #     xn = 0
-            #     yn = y(xn)
-            # if x0 > self._frames - 1:
-            #     x0 = self._frames - 1
-            #     y0 = y(x0)
-            # if xn < 0:
-            #     xn = 0
-            #     yn = y(0)
-            if angle_pixels < 0:
-                res = tuple(reversed(res))
-        else:
-            """
+			# if x0 < 0:
+			#     x0 = 0
+			#     y0 = y(x0)
+			# if xn < 0:
+			#     xn = 0
+			#     yn = y(xn)
+			# if x0 > self._frames - 1:
+			#     x0 = self._frames - 1
+			#     y0 = y(x0)
+			# if xn < 0:
+			#     xn = 0
+			#     yn = y(0)
+			if angle_pixels < 0:
+				res = tuple(reversed(res))
+		else:
+			"""
 			CASE 2:  Shallow angle
 
 				  x = 0               x = frames-1
@@ -238,108 +239,107 @@ class Gui:
 			o----> frames (Y)
 
 			"""
-            y0 = min(max(y(0), 0 + EPSILON2), self._cols - 1 - EPSILON2)
-            x0 = x(y0)
-            yn = min(max(y(self._frames - 1), 0 + EPSILON2), self._cols - 1 - EPSILON2)
-            xn = x(yn)
+			y0 = min(max(y(0), 0 + EPSILON2), self._cols - 1 - EPSILON2)
+			x0 = x(y0)
+			yn = min(max(y(self._frames - 1), 0 + EPSILON2), self._cols - 1 - EPSILON2)
+			xn = x(yn)
 
-            if x0 < 0:
-                x0, y0 = 0, y(0)  # todo: should be y(0)
-                xn, yn = self._frames - 1, y(self._frames - 1)
-                if yn < 0:
-                    xn = x(0)
-                    yn = 0
-                if yn > self._cols - 1:
-                    xn = x(self._cols - 1)
-                    yn = self._cols - 1
+			if x0 < 0:
+				x0, y0 = 0, y(0)  # todo: should be y(0)
+				xn, yn = self._frames - 1, y(self._frames - 1)
+				if yn < 0:
+					xn = x(0)
+					yn = 0
+				if yn > self._cols - 1:
+					xn = x(self._cols - 1)
+					yn = self._cols - 1
 
-            elif xn > self._frames - 1:
-                xn, yn = self._frames - 1, y(self._frames - 1)
-                x0, y0 = 0, min(y(0), self._cols - 1)
-                if y0 < 0:
-                    x0 = x(0)
-                    y0 = 0
-                if y0 > self._cols - 1:
-                    x0 = x(self._cols - 1)
-                    y0 = self._cols - 1
-                if yn < 0:
-                    xn = x(0)
-                    yn = 0
-                if yn > self._cols - 1:
-                    xn = x(self._cols - 1)
-                    yn = self._cols - 1
+			elif xn > self._frames - 1:
+				xn, yn = self._frames - 1, y(self._frames - 1)
+				x0, y0 = 0, min(y(0), self._cols - 1)
+				if y0 < 0:
+					x0 = x(0)
+					y0 = 0
+				if y0 > self._cols - 1:
+					x0 = x(self._cols - 1)
+					y0 = self._cols - 1
+				if yn < 0:
+					xn = x(0)
+					yn = 0
+				if yn > self._cols - 1:
+					xn = x(self._cols - 1)
+					yn = self._cols - 1
 
-            res = (int(round(x0)), int(round(y0))), (int(round(xn)), int(round(yn)))
-        return res
+			res = (int(round(x0)), int(round(y0))), (int(round(xn)), int(round(yn)))
+		return res
 
-    def get_last_result(self, resized=True):
-        if resized:
-            return self._resize_result()
-        return self._last_result
+	def get_last_result(self, resized=True):
+		if resized:
+			return self._resize_result()
+		return self._last_result
 
-    def viewpoint(self, slice=None, move=None, stereo=None, shift=None):
-        """
+	def viewpoint(self, slice=None, move=None, stereo=None, shift=None):
+		"""
 
 		:param slice:
 		:param move:
 		:param stereo:
 		:return:
 		"""
-        if slice == None:
-            assert (move != None) and (stereo != None), \
-                "Must provide slice or move + stereo in function viewpoint"
-            assert (MOVE_MIN <= move <= MOVE_MAX), \
-                "move must both be between {} and {}, got ".format(MOVE_MIN, MOVE_MAX, move)
+		if slice == None:
+			assert (move != None) and (stereo != None), \
+				"Must provide slice or move + stereo in function viewpoint"
+			assert (MOVE_MIN <= move <= MOVE_MAX), \
+				"move must both be between {} and {}, got ".format(MOVE_MIN, MOVE_MAX, move)
 
-            assert (STEREO_MIN <= stereo <= STEREO_MAX), \
-                "stereo must both be between {} and {}, got ".format(STEREO_MIN, STEREO_MAX, stereo)
+			assert (STEREO_MIN <= stereo <= STEREO_MAX), \
+				"stereo must both be between {} and {}, got ".format(STEREO_MIN, STEREO_MAX, stereo)
 
-            if shift is not None:
-                assert (SHIFT_MIN <= shift <= SHIFT_MAX), \
-                    "shift must both be between {} and {}, got ".format(SHIFT_MIN, SHIFT_MAX, shift)
-            slice = self._calc_slice(move=move, stereo=stereo, shift=shift)
-        else:
-            assert np.array(slice).shape == (2, 2)
-            (f_start, c_start), (f_end, c_end) = slice
-            for frame in (f_start, f_end):
-                assert (0 <= frame < self._frames)
-            for col in (c_start, c_end):
-                assert (0 <= col < self._cols)
+			if shift is not None:
+				assert (SHIFT_MIN <= shift <= SHIFT_MAX), \
+					"shift must both be between {} and {}, got ".format(SHIFT_MIN, SHIFT_MAX, shift)
+			slice = self._calc_slice(move=move, stereo=stereo, shift=shift)
+		else:
+			assert np.array(slice).shape == (2, 2)
+			(f_start, c_start), (f_end, c_end) = slice
+			for frame in (f_start, f_end):
+				assert (0 <= frame < self._frames)
+			for col in (c_start, c_end):
+				assert (0 <= col < self._cols)
 
-        r = stitch(self._aligned, slice=slice, avg_motion=self._avg_horizontal_motion)
-        self._last_result = r # (r - r.min()) / (np.ptp(r))
-        return self._resize_result()
+		r = stitch(self._aligned, slice=slice, avg_motion=self._avg_horizontal_motion)
+		self._last_result = r  # (r - r.min()) / (np.ptp(r))
+		return self._resize_result()
 
-    def get_motion_vec(self):
-        return self._motion_vec
+	def get_motion_vec(self):
+		return self._motion_vec
 
-    def get_motion_avg(self):
-        return self._avg_horizontal_motion
+	def get_motion_avg(self):
+		return self._avg_horizontal_motion
 
-    def _align_images(self, align_rows=True, align_cols=False):
-        t = time.time()
-        if align_rows or align_cols:
-            print("Aligning {} {}".format("rows" if align_rows else "", "cols" if align_cols else ""))
+	def _align_images(self, align_rows=True, align_cols=False):
+		t = time.time()
+		if align_rows or align_cols:
+			print("Aligning {} {}".format("rows" if align_rows else "", "cols" if align_cols else ""))
 
-            row_coords, col_coords, channel_coords, frame_coords = \
-                np.meshgrid(np.arange(self._rows), np.arange(self._cols), np.arange(self._channels), np.arange(self._frames-1),
-                                                 indexing='ij')
-            vec_cum_sum = np.cumsum(self._motion_vec, axis=0)
-            relative_vec = (vec_cum_sum - np.flip(vec_cum_sum, axis=0)) / 2
+			row_coords, col_coords, channel_coords, frame_coords = \
+				np.meshgrid(np.arange(self._rows), np.arange(self._cols), np.arange(self._channels),
+				            np.arange(self._frames - 1),
+				            indexing='ij')
+			vec_cum_sum = np.cumsum(self._motion_vec, axis=0)
+			relative_vec = (vec_cum_sum - np.flip(vec_cum_sum, axis=0)) / 2
 
-            if align_rows:
-                row_coords = row_coords + relative_vec[..., 0]
-            if align_cols:
-                col_coords = col_coords + relative_vec[..., 1]
+			if align_rows:
+				row_coords = row_coords + relative_vec[..., 0]
+			if align_cols:
+				col_coords = col_coords + relative_vec[..., 1]
 
-            coords = np.array((row_coords, col_coords, channel_coords, frame_coords))
-            res = warp(self._series, coords)
+			coords = np.array((row_coords, col_coords, channel_coords, frame_coords))
+			res = warp(self._series, coords)
 
-        else:
-            print("Nothing to align.".format())
-            res = self._series.copy()
+		else:
+			print("Nothing to align.".format())
+			res = self._series.copy()
 
-        print("Aligned images in {}".format(round(time.time() - t, 2)))
-        return res
-
-
+		print("Aligned images in {}".format(round(time.time() - t, 2)))
+		return res

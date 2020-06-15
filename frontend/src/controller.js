@@ -1,10 +1,10 @@
 
-const FAST_STEP = 0.5;
-const SLOW_STEP = 0.05;
+/** Constants */
+const debugging_host    = "http://localhost:8000/";
+const SERVER_HOST       = debugging_host;
 
-const SERVER_HOST = "http://localhost:8000/";
 
-
+/** Reusable function definitions */
 function addEvent(element, eventName, callback) {
     if (element.addEventListener) {
         element.addEventListener(eventName, callback, false);
@@ -14,37 +14,6 @@ function addEvent(element, eventName, callback) {
         element["on" + eventName] = callback;
     }
 }
-
-// b = document.querySelector("body");
-// b.addEventListener()
-
-
-addEvent(document, "keydown", function (e) {
-    e = e || window["event"];
-    if (e.key === 'Shift'){
-        console.log("d shift");
-        const sensitivity_controls = $("[id*=-step-]");
-        const sliders = $("[id*=-slider-]");
-        sensitivity_controls.each((index, elem) => elem.value = elem.value / 5);
-        sliders.each((index, elem) => elem.step = elem.step / 5);
-        // slider.step = SLOW_STEP;
-    }
-});
-
-addEvent(document, "keyup", function (e) {
-    e = e || window["event"];
-    console.log("up key");
-
-    if (e.key === "Shift"){
-        const sensitivity_controls = $("[id*=-step-]");
-        const sliders = $("[id*=-slider-]");
-        sensitivity_controls.each((index, elem) => elem.value = elem.value * 5);
-        sliders.each((index, elem) => elem.step = elem.step * 5);
-
-    }
-
-
-});
 
 function setup_sliders() {
     const step_controllers = $("[id*=-step-]");
@@ -66,10 +35,10 @@ function setup_sliders() {
         direct.each((i, elem) => elem.value = e.target.value);
         console.log(e.target.id);
         if (e.target.id.includes('viewpoint')){
-            await request_stitch();
+            await request_stitch_handler();
         }
         if (e.target.id.includes('focus')){
-            await request_focus();
+            await request_focus_handler();
         }
 
     });
@@ -86,40 +55,24 @@ function setup_sliders() {
         const slider = $("#" + e.target.id.replace("direct", "slider"));
         slider.each((i, elem) => elem.value = e.target.value);
         if (e.target.id.includes('viewpoint')){
-            await request_stitch();
+            await request_stitch_handler();
         }
         if (e.target.id.includes('focus')){
-            await request_focus();
+            await request_focus_handler();
         }
     });
     const radius_inputs = $("[id*=-radius-input-]");
     radius_inputs.change(async function (e) {
 
-        await request_focus();
+        await request_focus_handler();
 
     });
     const slice_inputs = $("[id*=-slice-input-]");
     slice_inputs.change(async function (e) {
-        await request_slice();
+        await request_slice_handler();
     });
 
 
-}
-
-async function request_save() {
-    const url = new URL(SERVER_HOST + 'save/');
-
-    // const options = {
-    //     method: 'GET'
-    // };
-    console.log($('#file-save-link'));
-
-    // const fileName = "foo.jpeg"; //if you have the fileName header available
-    // const link=document.createElement('a');
-    // link.href=url.href;
-    // link.download=fileName;
-    // link.target = '_blank';
-    // link.click();
 }
 
 function setup_controllers() {
@@ -138,7 +91,7 @@ function setup_controllers() {
     $("#button-upload-save-files").click(
         async (e) => {
             e.target.innerHTML = '<span class="spinner-border spinner-border-sm"  id="button-upload-save-files-spinner" role="status" aria-hidden="true"></span> Loading...';
-            await request_upload();
+            await request_upload_handler();
             e.target.innerHTML = "Save Changes";
             modal.fadeOut('slow');
         }
@@ -151,7 +104,7 @@ function setup_controllers() {
     );
     const motion_button = $("#motion-button-calculate");
     motion_button.click(
-        (e) => request_motion()
+        (e) => request_motion_handler()
     );
     // motion_button.tooltip();
     const dropdown_items = $(".dropdown-item");
@@ -167,13 +120,10 @@ function setup_controllers() {
         console.log(input_elem);
 
         input_elem.val(item_val);
-        // e.target.parent.parent.siblings.val(item_val);
     })
 }
-setup_sliders();
-setup_controllers();
 
-async function request_motion() {
+async function request_motion_handler() {
     const url = new URL(SERVER_HOST + 'motion/');
     url.searchParams.append('add_string', true.toString());
 
@@ -203,7 +153,7 @@ async function request_motion() {
         );
 }
 
-async function request_slice() {
+async function request_slice_handler() {
     const frame_start = $('#viewpoint-slice-input-start-frame').val();
     const col_start = $('#viewpoint-slice-input-start-column').val();
     const frame_end = $('#viewpoint-slice-input-end-frame').val();
@@ -222,7 +172,7 @@ async function request_slice() {
     canvas.attr('src', url.href);
 }
 
-async function request_stitch() {
+async function request_stitch_handler() {
     const shift_value = $('#viewpoint-direct-shift').val();
     const move_value = $('#viewpoint-direct-move').val();
     const stereo_value = $('#viewpoint-direct-stereo').val();
@@ -276,7 +226,7 @@ async function request_stitch() {
 
 }
 
-async function request_focus() {
+async function request_focus_handler() {
     const focus_depth = $('#focus-direct-depth').val();
     const center = $('#focus-radius-input-center').val();
     const radius = $('#focus-radius-input-radius').val();
@@ -292,7 +242,7 @@ async function request_focus() {
 
 }
 
-async function request_upload() {
+async function request_upload_handler() {
     const file = $("#customFile")[0].files[0];
     const formData = new FormData();
 
@@ -312,14 +262,58 @@ async function request_upload() {
     await fetch(request)
       .then(response => {
         if (response.status === 200) {
+            return response.json();
 
         } else {
             console.error(response);
-          throw new Error('Something went wrong on api server!');
+            alert(response.text());
         }
-      });
+      }).then((json) => {
+            // const rows = json['rows'];
+            const cols = json['cols'];
+            // const channels = json['channels'];
+            const frames = json['frames'];
+            $('#focus-radius-input-center').attr('max', frames);
+            $('#focus-radius-input-radius').attr('max', frames / 2);
+            $('#viewpoint-slice-input-start-frame').attr('max', frames - 1);
+            $('#viewpoint-slice-input-end-frame').attr('max', frames - 1);
+            $('#viewpoint-slice-input-start-column').attr('max', cols - 1);
+            $('#viewpoint-slice-input-end-column').attr('max', cols - 1);
+
+            //todo edit presets
+        }
+
+
+
+        );
 
 
 }
+
+/** Page/logic setup on load */
+addEvent(document, "keydown", function (e) {
+    e = e || window["event"];
+    if (e.key === 'Shift'){
+        const sensitivity_controls = $("[id*=-step-]");
+        const sliders = $("[id*=-slider-]");
+        sensitivity_controls.each((index, elem) => elem.value = elem.value / 5);
+        sliders.each((index, elem) => elem.step = elem.step / 5);
+        // slider.step = SLOW_STEP;
+    }
+});
+addEvent(document, "keyup", function (e) {
+    e = e || window["event"];
+    if (e.key === "Shift"){
+        const sensitivity_controls = $("[id*=-step-]");
+        const sliders = $("[id*=-slider-]");
+        sensitivity_controls.each((index, elem) => elem.value = elem.value * 5);
+        sliders.each((index, elem) => elem.step = elem.step * 5);
+
+    }
+
+
+});
+setup_sliders();
+setup_controllers();
 
 

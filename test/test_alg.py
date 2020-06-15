@@ -58,17 +58,17 @@ class TestFocus(TestCase):
                 gen_artificial_series(s, brighten=False, step=1),
                 gen_artificial_series(s, brighten=False, step=5)
             ]:
-                res = focus(series, depth=1)
+                res = focus2(series, shift_vec=np.ones(s[-1]))
                 print(res.shape)
                 plt.imshow(res)
                 plt.show()
 
     def test_inf_depth(self):
-        example = "apple"
-        suffix = example.upper()
-        p = os.path.join("..", "sample_data", example)
+        example = "apples"
+        suffix = "APPLE"
+        p = os.path.join("..", "backend", "sample_data", example)
         series = open_series(p, suffix=suffix, extension="jpg")
-        res = focus(series,shift_facter=0.5, depth=1)
+        res = focus2(series, shift_vec=np.ones(series.shape[-1]) * -2)
         print(res.shape)
         plt.imshow(res)
         plt.show()

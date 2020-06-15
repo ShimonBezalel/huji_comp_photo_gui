@@ -13,21 +13,21 @@ import cv2
 from scipy.ndimage.interpolation import shift
 from skimage.util.shape import view_as_windows
 
-FACTOR_MAX = 10
-FACTOR_MIN = 1
+FACTOR_MAX = 2.5
+FACTOR_MIN = 0.7
 
 DEBUG = True
 
 EPSILON = 0.00001
 
 
-def open_series(path, suffix="", extension="jpg", zero_index=False):
+def open_series(path, prefix="", extension="jpg", zero_index=False):
 	for root, dirs, files in os.walk(path):
 		k = len(files)
 		file_format = "{}{:03d}.{}" if k > 100 else "{}{:02d}.{}"
 		t = time.time()
 		first, last = (0, k) if zero_index else (1, k + 1)
-		all_images = [plt.imread(os.path.join(path, file_format.format(suffix, i, extension)), format=extension)
+		all_images = [plt.imread(os.path.join(path, file_format.format(prefix, i, extension)), format=extension)
 					  for i in range(first, last)]
 		print("Read {} images in {} s".format(k, time.time() - t))
 		im_series = np.stack(all_images, axis=-1)
@@ -41,15 +41,15 @@ def estimate_factor(m, delta_frames, delta_cols):
 	# m = shape[1]
 	# delta = c_end - c_start
 
-	factorize = interp1d((0, (m / 2) + 1), (FACTOR_MIN, FACTOR_MAX))
+	factorize = interp1d((-m, m), (FACTOR_MIN, FACTOR_MAX))
 
-	f = factorize(np.abs(delta_cols / delta_frames))
-	if delta_cols < 0:
-		f = 1 / f
+	f = factorize(np.abs(delta_cols))
+	# if delta_cols < 0:
+	# 	f = 1 / f
 	return f
 
 
-def stitch(im_series, slice, avg_motion=3):
+def stitch(im_series, slice, avg_motion=3, factor=None):
 	"""
 	Stitch together columns from a given image series along the slice
 		 ___________*________
@@ -70,16 +70,26 @@ def stitch(im_series, slice, avg_motion=3):
 	if f_start == f_end:
 		return im_series[..., f_start]
 	assert f_start < f_end
-	factor = estimate_factor(im_series.shape[1], f_end - f_start,
+	if not factor:
+		factor = estimate_factor(im_series.shape[1], f_end - f_start,
 							 c_end - c_start)  # todo: What is the result shape? Same as frame 1
+	# if c_start > c_end:
+	# 	series = np.flip(im_series, axis=1)
+	# 	temp = c_end
+	# 	c_end = c_start
+	# 	c_start = temp
+	# else:
+	# 	series = im_series
+	series = im_series
 	slice_width = np.abs(np.round(avg_motion * factor))
+	print(slice_width)
+
 	number_of_frames = f_end - f_start
-	number_of_columns = c_end - c_start
 
 	h, w, c = im_series[..., 0].shape
 	# result_shape = (input_image_shape[0], int(max(number_of_frames, number_of_columns) * factor), input_image_shape[2])
-	result_shape = (h, int(number_of_frames * slice_width), c)
-	result_image = np.zeros(shape=result_shape)
+	# result_shape = (h, int(number_of_frames * slice_width), c)
+	# result_image = np.zeros(shape=result_shape)
 
 	slice_range = np.arange(-slice_width // 2 + 1, slice_width // 2 + 1)
 	frame_grid, col_grid = np.meshgrid(np.arange(f_start, f_end), slice_range, indexing='ij')
@@ -103,8 +113,10 @@ def stitch(im_series, slice, avg_motion=3):
 	# safely_padded_series = np.pad(
 	# 	im_series, ((0,0), (int(slice_width), int(slice_width)), (0, 0), (0, 0)), mode='constant')
 
-	pixels_right = im_series[::, right_col_indexes, ::, frame_indices]
-	pixels_left = im_series[::, left_col_indexes, ::, frame_indices]
+
+
+	pixels_right = series[::, right_col_indexes, ::, frame_indices]
+	pixels_left = series[::, left_col_indexes, ::, frame_indices]
 	weighted_res = pixels_right.transpose() * np.repeat(cols_right_weights, slice_width) \
 				   + \
 				   pixels_left.transpose() * np.repeat(cols_left_weights, slice_width)
@@ -121,17 +133,61 @@ def focus(im_series, shift_factor, depth=None):
 	:param depth:
 	:return:
 	"""
-	shift_factor = 1 - shift_factor
+	# shift_factor = 1 - shift_factor
 	p = np.full((im_series.shape[0], im_series.shape[1] - 1, im_series.shape[2], im_series.shape[3]), 0)
 	a_ext = np.concatenate((p, im_series, p), axis=1)
 	y, x, c, s = im_series.shape
-	shift_pixel_factor = (x/(2*s))* shift_factor
+	shift_pixel_factor = (x/(2*s)) * shift_factor
 	v = view_as_windows(a_ext, (y, x, c, 1))
 	shift_vec = np.linspace(start=(-np.floor(s / 2)) * shift_pixel_factor, stop=(np.ceil(s / 2) - 1) * shift_pixel_factor, num=s)
 	ser = v[0, shift_vec.astype(int) - x, 0, np.arange(s)]
 	shifted_series = np.transpose(np.squeeze(ser), (1, 2, 3, 0))
 	im = np.median(shifted_series, axis=-1)
 	return im
+
+def focus2(im_series, shift_vec, depth=None):
+	"""
+
+	:param im_series:
+	:param depth:
+	:return:
+	"""
+	# shift_factor = 1 - shift_factor
+	rows, cols, channels, frames = im_series.shape
+
+	# row_coords, col_coords, channel_coords, frame_coords = np.meshgrid(np.arange(rows), np.arange(cols), np.arange(channels), np.arange(frames), indexing='ij')
+	col_coords, frame_coords = np.meshgrid(np.arange(cols), np.arange(frames), indexing='ij')
+
+	accumulated = np.cumsum(shift_vec)
+	centered = (accumulated - np.flip(accumulated)) / 2
+
+	shifted_col_coords = col_coords + centered
+
+	cols_right = np.ceil(shifted_col_coords).astype(np.int16)  # ie [ 3, 3, 3, 4 , ...]
+	cols_right_weights = np.ceil(centered) - centered  # ie [ 0.3, 0.4, 0.9, 0.2 , ...]
+
+	cols_left = np.floor(shifted_col_coords).astype(np.int16)  # ie [ 2, 2, 2, 3 , ...]
+	cols_left_weights = 1 - cols_right_weights  # ie [ 0.7, 0.6, 0.1, 0.8 , ...]
+
+	clipped_right = np.clip(cols_right, 0, cols-1)
+	clipped_left = np.clip(cols_left, 0, cols-1)
+	frame_coords = frame_coords.astype(np.int16)
+
+	shift_series_right = im_series[::, clipped_right, ::, frame_coords.astype(np.int16)]
+	shift_series_left = im_series[::, clipped_left, ::, frame_coords.astype(np.int16)]
+
+	z = np.zeros_like(shift_series_right)
+	take_right = np.where(np.logical_and(1 <= cols_right, cols_right <= cols-1)[..., np.newaxis, np.newaxis], shift_series_right, z)
+	take_left = np.where(np.logical_and(0 <= cols_left, cols_left <= cols-2)[..., np.newaxis, np.newaxis], shift_series_left, z)
+
+	aligned = np.moveaxis(take_right, 1, -1) * cols_right_weights + np.moveaxis(take_left, 1, -1) * cols_left_weights
+
+	res = np.moveaxis(aligned, 1, 0)
+
+	# mean = np.mean(res, axis=-1)
+	med = np.median(res, axis=-1)
+
+	return med
 
 
 def rgb2gray_series(series):

@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'focus.*$', views.focus),
     url(r'viewpoint.*$', views.viewpoint),
     url(r'motion.*$', views.motion),
-    url(r'slice.*$', views.slice),
+    url(r'params_to_slice.*$', views.params_to_slice),
+    url(r'slice_to_params.*$', views.slice_to_params),
     url(r'save.*$', views.save)
 ]

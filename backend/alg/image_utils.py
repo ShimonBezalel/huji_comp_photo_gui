@@ -49,7 +49,7 @@ def estimate_factor(m, delta_frames, delta_cols):
 	return f
 
 
-def stitch(im_series, slice, avg_motion=3, factor=None):
+def stitch(im_series, slice, avg_motion=3, factor=None, slice_width=None):
 	"""
 	Stitch together columns from a given image series along the slice
 		 ___________*________
@@ -70,9 +70,13 @@ def stitch(im_series, slice, avg_motion=3, factor=None):
 	if f_start == f_end:
 		return im_series[..., f_start]
 	assert f_start < f_end
-	if not factor:
+	if factor is not None:
+		slice_width = max(np.abs(avg_motion * factor), 1)
+	elif slice_width is None:
 		factor = estimate_factor(im_series.shape[1], f_end - f_start,
 							 c_end - c_start)  # todo: What is the result shape? Same as frame 1
+		slice_width = max(np.abs(avg_motion * factor), 1)
+
 	# if c_start > c_end:
 	# 	series = np.flip(im_series, axis=1)
 	# 	temp = c_end
@@ -81,8 +85,7 @@ def stitch(im_series, slice, avg_motion=3, factor=None):
 	# else:
 	# 	series = im_series
 	series = im_series
-	slice_width = np.abs(np.round(avg_motion * factor))
-	print(slice_width)
+	print("slice_width: ", slice_width)
 
 	number_of_frames = f_end - f_start
 
@@ -90,8 +93,10 @@ def stitch(im_series, slice, avg_motion=3, factor=None):
 	# result_shape = (input_image_shape[0], int(max(number_of_frames, number_of_columns) * factor), input_image_shape[2])
 	# result_shape = (h, int(number_of_frames * slice_width), c)
 	# result_image = np.zeros(shape=result_shape)
-
-	slice_range = np.arange(-slice_width // 2 + 1, slice_width // 2 + 1)
+	slice_width = np.round(slice_width)
+	slice_range = np.arange(slice_width)
+	slice_range -= (slice_width // 2)
+	slice_width = len(slice_range)
 	frame_grid, col_grid = np.meshgrid(np.arange(f_start, f_end), slice_range, indexing='ij')
 
 	cols = np.linspace(c_start + EPSILON, c_end - EPSILON, number_of_frames)[..., np.newaxis]  # ie [ 2.3, 2.4, 2.9, 3.2 , ...]
@@ -145,7 +150,7 @@ def focus(im_series, shift_factor, depth=None):
 	im = np.median(shifted_series, axis=-1)
 	return im
 
-def focus2(im_series, shift_vec, depth=None):
+def focus2(im_series, shift_vec, depth=None, method=np.mean):
 	"""
 
 	:param im_series:
@@ -185,9 +190,12 @@ def focus2(im_series, shift_vec, depth=None):
 	res = np.moveaxis(aligned, 1, 0)
 
 	# mean = np.mean(res, axis=-1)
-	med = np.median(res, axis=-1)
+	kwargs = {'axis': -1}
+	if method is np.mean:
+		kwargs['overwrite_input'] = True
+	out = method(res, **kwargs)
 
-	return med
+	return out
 
 
 def rgb2gray_series(series):

@@ -86,6 +86,11 @@ class Gui:
         self._interp_stereo = interp1d((-1, 1), (self._cols - 1, 0))
         self._interp_shift = interp1d((0, 1), (0, self._frames - 1))
 
+        self._interp_rev_move = interp1d((-(np.pi / 2), np.pi / 2), (-1, 1))
+        self._interp_rev_stereo = interp1d((self._cols - 1, 0),     (-1, 1))
+        self._interp_rev_shift = interp1d((0, self._frames - 1),    (0, 1))
+
+
     def _resize_result(self):
         """
         Resize the image in "last result" to fit the gui aspect ratio and pixel size, by padding with black.
@@ -133,7 +138,6 @@ class Gui:
             resize_shape = (self._gui_live_result_height, self._gui_live_result_width, 3)
             padding_dims = ((0, 0), (0, 0), (0, 0))
 
-
         resized = resize(self._last_result, output_shape=resize_shape)
         output = np.pad(resized, pad_width=padding_dims, mode='constant')
         return output
@@ -142,15 +146,42 @@ class Gui:
         rows, columns, channels, frames = self._series.shape
         start_frame, end_frame = max(0, center - radius), min(columns, center + radius)
         shift_factor = depth
-        #shift_factor = self.get_motion_vec()[start_frame:end_frame, 1].mean() * depth
+        # shift_factor = self.get_motion_vec()[start_frame:end_frame, 1].mean() * depth
         self._last_result = focus2(self._aligned[..., start_frame: end_frame],
                                    shift_vec=self._motion_vec[start_frame: end_frame, 1] * depth)
         # self._last_result = focus(self._aligned_row_cols[..., start_frame:end_frame], shift_factor=shift_factor)
         return self._resize_result()
 
-    def _calc_slice(self, move, stereo, shift=0.5):
-        """
+    def slice_to_params(self, slice):
+        (f_start, c_start), (f_end, c_end) = slice
+        for f in [f_start, f_end]:
+            assert 0 <= f <= self._frames, "Frames provided out of range"
+        for c in [c_start, c_end]:
+            assert 0 <= c <= self._cols, "Cols provided out of range"
 
+        center_col = (c_start + c_end) / 2
+        stereo = np.round(self._interp_rev_stereo(center_col), 3)
+
+        center_frame = (f_start + f_end) / 2
+        shift = np.round(self._interp_rev_shift(center_frame), 3)
+
+        if f_start == f_end:
+            if c_end >= c_start:
+                move = 1
+            else:
+                move = -1
+        else:
+            delta_cols = c_end - c_start    #  may be negative
+            delta_frames = f_end - f_start  #  asserted to not be 0 above
+            angle_in_pixels = delta_cols / delta_frames
+            angle_radians = np.arctan(angle_in_pixels)
+            move = np.round(self._interp_rev_move(angle_radians), 3)
+
+        return {'stereo': stereo, 'shift': shift, 'move': move}
+
+    def params_to_slice(self, move, stereo, shift=0.5):
+        """
+        Converts continuous params into discreet pixel coordinates as slice.
 		:param move:
 		:param stereo:
 		:return:
@@ -288,17 +319,25 @@ class Gui:
             if shift is not None:
                 assert (SHIFT_MIN <= shift <= SHIFT_MAX), \
                     "shift must both be between {} and {}, got ".format(SHIFT_MIN, SHIFT_MAX, shift)
-            slice = self._calc_slice(move=move, stereo=stereo, shift=shift)
+            slice = self.params_to_slice(move=move, stereo=stereo, shift=shift)
+            (f_start, c_start), (f_end, c_end) = slice
         else:
             assert np.array(slice).shape == (2, 2)
             (f_start, c_start), (f_end, c_end) = slice
             for frame in (f_start, f_end):
-                assert (0 <= frame < self._frames)
+                assert 0 <= frame < self._frames, "Frames is out of range"
             for col in (c_start, c_end):
-                assert (0 <= col < self._cols)
+                assert 0 <= col < self._cols, "Cols is out of range"
 
-        r = stitch(self._aligned, slice=slice, avg_motion=self._avg_horizontal_motion, factor=factor)
-        self._last_result = r # (r - r.min()) / (np.ptp(r))
+        slice_width = None
+        if not factor:
+            delta_col = c_end - c_start
+            delta_frame = (f_end - f_start) + EPSILON   # add epsilon to avoid zero division
+            overall_motion = np.abs(np.sum(self._motion_vec[f_start:f_end, 1]))
+            slice_width = min(max(1, (overall_motion + delta_col) / delta_frame), self._cols)
+
+        r = stitch(self._aligned, slice=slice, avg_motion=self._avg_horizontal_motion, factor=factor, slice_width=slice_width)
+        self._last_result = r  # (r - r.min()) / (np.ptp(r))
         return self._resize_result()
 
     def get_motion_vec(self):
@@ -313,8 +352,9 @@ class Gui:
             print("Aligning {} {}".format("rows" if align_rows else "", "cols" if align_cols else ""))
 
             row_coords, col_coords, channel_coords, frame_coords = \
-                np.meshgrid(np.arange(self._rows), np.arange(self._cols), np.arange(self._channels), np.arange(self._frames-1),
-                                                 indexing='ij')
+                np.meshgrid(np.arange(self._rows), np.arange(self._cols), np.arange(self._channels),
+                            np.arange(self._frames - 1),
+                            indexing='ij')
             vec_cum_sum = np.cumsum(self._motion_vec, axis=0)
             relative_vec = (vec_cum_sum - np.flip(vec_cum_sum, axis=0)) / 2
 

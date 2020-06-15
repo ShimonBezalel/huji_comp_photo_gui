@@ -82,17 +82,38 @@ def upload_images(request):
 
 
 @csrf_exempt
-def slice(request):
+def params_to_slice(request):
     shift = float(request.GET.get('shift'))
     move = float(request.GET.get('move'))
     stereo = float(request.GET.get('stereo'))
 
     print("Calc Slice - move: {} stereo: {} shift: {}".format(move, stereo, shift))
 
-    slice = cache._calc_slice(move, stereo, shift)
+    slice = cache.params_to_slice(move, stereo, shift)
     raw = [int(i) for i in [slice[0][0], slice[0][1], slice[1][0], slice[1][1]]]
 
     return JsonResponse({'slice': raw})
+
+@csrf_exempt
+def slice_to_params(request):
+    slice_raw = request.GET.get('slice', None)
+    default = {'move': 0, 'shift': 0.5, 'stereo': 0}
+    if not slice_raw:
+        print("No slice provided in slice_to_params")
+        return JsonResponse(default)
+
+    print("Slice to params - slice {}".format(slice_raw))
+    inputs = [int(i) for i in slice_raw.split(",")]
+    if len(inputs) != 4:
+        print("Slice must have 4 elements, got {}".format(len(inputs)))
+        return JsonResponse(default)
+
+    slice = (inputs[0], inputs[1]), (inputs[2], inputs[3])
+
+    res = cache.slice_to_params(slice)
+    print("Slice to params - move: {} stereo: {} shift: {}".format(res['move'], res['stereo'], res['shift']))
+
+    return JsonResponse(res)
 
 
 def focus(request):

@@ -160,7 +160,6 @@ async function request_slice_handler() {
     const col_end = $('#viewpoint-slice-input-end-column').val();
     const slice = [[frame_start, col_start], [frame_end, col_end]].toString();
 
-
     const url = new URL(SERVER_HOST + 'viewpoint/');
 
     url.searchParams.append('slice', slice);
@@ -170,7 +169,41 @@ async function request_slice_handler() {
 
     const canvas = $('#canvas-live-render');
     canvas.attr('src', url.href);
+
+    const params_url = new URL(SERVER_HOST + 'slice_to_params/');
+
+    params_url.searchParams.append('slice', slice);
+
+    console.log("Params Request: "+ params_url.href);
+
+    const request = new Request(params_url.href);
+    const options = {
+      method: 'GET'
+    };
+
+    await fetch(request, options)
+      .then(response => {
+        if (response.status === 200) {
+            return response.json();
+        } else {
+            console.error(response);
+          throw new Error('Something went wrong on api server!');
+        }
+      }).then( json => {
+            const move = json['move'];
+            const shift = json['shift'];
+            const stereo =json['stereo'];
+
+            $('#viewpoint-direct-shift').val(shift);
+            $('#viewpoint-direct-move').val(move);
+            $('#viewpoint-direct-stereo').val(stereo);
+
+            $('#viewpoint-slider-shift').val(shift);
+            $('#viewpoint-slider-move').val(move);
+            $('#viewpoint-slider-stereo').val(stereo);
+      });
 }
+
 
 async function request_stitch_handler() {
     const shift_value = $('#viewpoint-direct-shift').val();
@@ -188,7 +221,7 @@ async function request_stitch_handler() {
     const canvas = $('#canvas-live-render');
     canvas.attr('src', viewpoint_url.href);
 
-    const slice_url = new URL(SERVER_HOST + 'slice/');
+    const slice_url = new URL(SERVER_HOST + 'params_to_slice/');
 
     slice_url.searchParams.append('shift', shift_value ? shift_value : 0.5);
     slice_url.searchParams.append('move', move_value ? move_value : 0);

@@ -40,7 +40,7 @@ class TestGuiClass(TestCase):
                 for stereo in np.linspace(-0.99, 0.99, 10):
                     for shift in np.linspace(0.01, 0.99, 10):
                         print(move, stereo, shift)
-                        sl = self._mock_gui_class._calc_slice(move, stereo, shift)
+                        sl = self._mock_gui_class.params_to_slice(move, stereo, shift)
                         print("\t", sl)
                         print()
                         for pair in sl:

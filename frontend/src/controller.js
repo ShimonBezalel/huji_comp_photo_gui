@@ -1,7 +1,6 @@
-
 /** Constants */
-const debugging_host    = "http://localhost:8000/";
-const SERVER_HOST       = debugging_host;
+const debugging_host = "http://localhost:8000/";
+const SERVER_HOST = debugging_host;
 
 
 /** Reusable function definitions */
@@ -20,10 +19,10 @@ function setup_sliders() {
     step_controllers.attr("value", 0.01);
     step_controllers.change(function (e) {
         const slider = $("#" + e.target.id.replace("step", "slider"));
-        slider.each((i, elem) => elem.step = e.target.value );
+        slider.each((i, elem) => elem.step = e.target.value);
 
         const direct = $("#" + e.target.id.replace("step", "direct"));
-        direct.each((i, elem) => elem.step = e.target.value );
+        direct.each((i, elem) => elem.step = e.target.value);
     });
 
     const slider_controllers = $("[id*=-slider-]");
@@ -34,10 +33,10 @@ function setup_sliders() {
         const direct = $("#" + e.target.id.replace("slider", "direct"));
         direct.each((i, elem) => elem.value = e.target.value);
         console.log(e.target.id);
-        if (e.target.id.includes('viewpoint')){
+        if (e.target.id.includes('viewpoint')) {
             await request_stitch_handler();
         }
-        if (e.target.id.includes('focus')){
+        if (e.target.id.includes('focus')) {
             await request_focus_handler();
         }
 
@@ -50,14 +49,14 @@ function setup_sliders() {
         elem.value = slider.val();
         const step = $("#" + elem.id.replace("direct", "step"));
         elem.step = step.val();
-    } );
+    });
     direct_controllers.change(async function (e) {
         const slider = $("#" + e.target.id.replace("direct", "slider"));
         slider.each((i, elem) => elem.value = e.target.value);
-        if (e.target.id.includes('viewpoint')){
+        if (e.target.id.includes('viewpoint')) {
             await request_stitch_handler();
         }
-        if (e.target.id.includes('focus')){
+        if (e.target.id.includes('focus')) {
             await request_focus_handler();
         }
     });
@@ -84,9 +83,9 @@ function setup_controllers() {
     $("#file-button-save").attr('href', new URL(SERVER_HOST + 'save/').href);
     $("#motion-button-save").attr('href', new URL(SERVER_HOST + 'motion/').href);
 
-    $(".custom-file-input").on("change", function(e) {
+    $(".custom-file-input").on("change", function (e) {
         const fileNames = Array.from(e.target.files).map(f => f.name).join(", ");
-      $(this).siblings(".custom-file-label").addClass("selected").html(fileNames);
+        $(this).siblings(".custom-file-label").addClass("selected").html(fileNames);
     });
     $("#button-upload-save-files").click(
         async (e) => {
@@ -109,17 +108,39 @@ function setup_controllers() {
     // motion_button.tooltip();
     const dropdown_items = $(".dropdown-item");
     dropdown_items.click((e) => {
+        const drop_down_values = {
+            "focus-depth-select-direct-Micro": 0.1,
+            "focus-depth-select-direct-Landscape": 0.9,
+            "focus-shift-select-direct-Left Most Frame": 0,
+
+            "viewpoint-shift-select-direct-Left Most Frame": 0,
+            "viewpoint-shift-select-direct-Right Most Frame": 1,
+            "viewpoint-shift-select-direct-Center Frame": 0.5,
+
+            "viewpoint-move-select-direct-Zoom Out": 0.9,
+            "viewpoint-move-select-direct-Zoom In": -0.9,
+            "viewpoint-move-select-direct-Center": 0,
+
+            "viewpoint-stereo-select-direct-Rotate Left": -0.9,
+            "viewpoint-stereo-select-direct-Rotate Right": 0.9,
+            "viewpoint-stereo-select-direct-Center": 0,
+        };
+
         console.log(e);
 
         const item_val = e.target.text;
-        console.log(item_val);
         const menu_id = e.target.parentElement.id;
-        console.log(menu_id);
-
         const input_elem = $("#" + menu_id.replace("dropdown", "input"));
-        console.log(input_elem);
-
+        console.log(item_val)
+        console.log(menu_id.replace("dropdown", "input"))
+        console.log(input_elem)
         input_elem.val(item_val);
+        const base = menu_id.replace("dropdown", "direct");
+        var fields = base.split('-');
+        const base_direct = fields[0] + "-" + fields[3] + "-" + fields[1];
+        const direct_elem = $("#" + base_direct);
+        direct_elem.val(drop_down_values[base + "-" + item_val]);
+        direct_elem.change();
     })
 }
 
@@ -128,22 +149,22 @@ async function request_motion_handler() {
     url.searchParams.append('add_string', true.toString());
 
     const options = {
-      method: 'GET'
+        method: 'GET'
     };
     const request = new Request(url.href, options);
 
 
     await fetch(request)
-      .then(response => {
-        if (response.status === 200) {
-            const j = response.json();
-            console.log(j);
-            return j;
-        } else {
-            console.error(response);
-          throw new Error('Something went wrong on api server!');
-        }
-      }).then(json => json['as_string']
+        .then(response => {
+            if (response.status === 200) {
+                const j = response.json();
+                console.log(j);
+                return j;
+            } else {
+                console.error(response);
+                throw new Error('Something went wrong on api server!');
+            }
+        }).then(json => json['as_string']
         ).then(
             vec_string => {
                 const elem = $("#motion-vector-display");
@@ -181,8 +202,8 @@ async function request_stitch_handler() {
 
     viewpoint_url.searchParams.append('shift', shift_value ? shift_value : 0.5);
     viewpoint_url.searchParams.append('move', move_value ? move_value : 0);
-    viewpoint_url.searchParams.append('stereo', stereo_value? stereo_value : 0);
-    console.log("Stitch/Viewpoint Request: "+ viewpoint_url.href);
+    viewpoint_url.searchParams.append('stereo', stereo_value ? stereo_value : 0);
+    console.log("Stitch/Viewpoint Request: " + viewpoint_url.href);
 
 
     const canvas = $('#canvas-live-render');
@@ -192,36 +213,34 @@ async function request_stitch_handler() {
 
     slice_url.searchParams.append('shift', shift_value ? shift_value : 0.5);
     slice_url.searchParams.append('move', move_value ? move_value : 0);
-    slice_url.searchParams.append('stereo', stereo_value? stereo_value : 0);
-    console.log("Slice Request: "+ slice_url.href);
+    slice_url.searchParams.append('stereo', stereo_value ? stereo_value : 0);
+    console.log("Slice Request: " + slice_url.href);
 
     const request = new Request(slice_url.href);
     const options = {
-      method: 'GET'
+        method: 'GET'
     };
 
     await fetch(request, options)
-      .then(response => {
-        if (response.status === 200) {
-            return response.json();
-        } else {
-            console.error(response);
-          throw new Error('Something went wrong on api server!');
-        }
-      }).then( json => {
-            const raw = json['slice'];
-            const frame_start = raw[0];
-            const col_start = raw[1];
-            const frame_end = raw[2];
-            const col_end = raw[3];
-            $('#viewpoint-slice-input-start-frame').val(frame_start);
-            $('#viewpoint-slice-input-start-column').val(col_start);
-            $('#viewpoint-slice-input-end-frame').val(frame_end);
-            $('#viewpoint-slice-input-end-column').val(col_end);
-      }
-
+        .then(response => {
+            if (response.status === 200) {
+                return response.json();
+            } else {
+                console.error(response);
+                throw new Error('Something went wrong on api server!');
+            }
+        }).then(json => {
+                const raw = json['slice'];
+                const frame_start = raw[0];
+                const col_start = raw[1];
+                const frame_end = raw[2];
+                const col_end = raw[3];
+                $('#viewpoint-slice-input-start-frame').val(frame_start);
+                $('#viewpoint-slice-input-start-column').val(col_start);
+                $('#viewpoint-slice-input-end-frame').val(frame_end);
+                $('#viewpoint-slice-input-end-column').val(col_end);
+            }
         );
-
 
 
 }
@@ -236,7 +255,7 @@ async function request_focus_handler() {
     url.searchParams.append('depth', focus_depth);
     url.searchParams.append('center', center);
     url.searchParams.append('radius', radius);
-    console.log("Focus Request: "+ url.href);
+    console.log("Focus Request: " + url.href);
     const canvas = $('#canvas-live-render');
     canvas.attr('src', url.href);
 
@@ -247,12 +266,12 @@ async function request_upload_handler() {
     const formData = new FormData();
 
     const options = {
-      method: 'POST',
-      body: formData,
-      // If you add this, upload won't work
-      // headers: {
-      //   'Content-Type': 'multipart/form-data',
-      // }
+        method: 'POST',
+        body: formData,
+        // If you add this, upload won't work
+        // headers: {
+        //   'Content-Type': 'multipart/form-data',
+        // }
     };
 
 
@@ -260,31 +279,28 @@ async function request_upload_handler() {
 
     const request = new Request(SERVER_HOST + "upload_images/", options);
     await fetch(request)
-      .then(response => {
-        if (response.status === 200) {
-            return response.json();
+        .then(response => {
+            if (response.status === 200) {
+                return response.json();
 
-        } else {
-            console.error(response);
-            alert(response.text());
-        }
-      }).then((json) => {
-            // const rows = json['rows'];
-            const cols = json['cols'];
-            // const channels = json['channels'];
-            const frames = json['frames'];
-            $('#focus-radius-input-center').attr('max', frames);
-            $('#focus-radius-input-radius').attr('max', frames / 2);
-            $('#viewpoint-slice-input-start-frame').attr('max', frames - 1);
-            $('#viewpoint-slice-input-end-frame').attr('max', frames - 1);
-            $('#viewpoint-slice-input-start-column').attr('max', cols - 1);
-            $('#viewpoint-slice-input-end-column').attr('max', cols - 1);
+            } else {
+                console.error(response);
+                alert(response.text());
+            }
+        }).then((json) => {
+                // const rows = json['rows'];
+                const cols = json['cols'];
+                // const channels = json['channels'];
+                const frames = json['frames'];
+                $('#focus-radius-input-center').attr('max', frames);
+                $('#focus-radius-input-radius').attr('max', frames / 2);
+                $('#viewpoint-slice-input-start-frame').attr('max', frames - 1);
+                $('#viewpoint-slice-input-end-frame').attr('max', frames - 1);
+                $('#viewpoint-slice-input-start-column').attr('max', cols - 1);
+                $('#viewpoint-slice-input-end-column').attr('max', cols - 1);
 
-            //todo edit presets
-        }
-
-
-
+                //todo edit presets
+            }
         );
 
 
@@ -293,7 +309,7 @@ async function request_upload_handler() {
 /** Page/logic setup on load */
 addEvent(document, "keydown", function (e) {
     e = e || window["event"];
-    if (e.key === 'Shift'){
+    if (e.key === 'Shift') {
         const sensitivity_controls = $("[id*=-step-]");
         const sliders = $("[id*=-slider-]");
         sensitivity_controls.each((index, elem) => elem.value = elem.value / 5);
@@ -303,7 +319,7 @@ addEvent(document, "keydown", function (e) {
 });
 addEvent(document, "keyup", function (e) {
     e = e || window["event"];
-    if (e.key === "Shift"){
+    if (e.key === "Shift") {
         const sensitivity_controls = $("[id*=-step-]");
         const sliders = $("[id*=-slider-]");
         sensitivity_controls.each((index, elem) => elem.value = elem.value * 5);

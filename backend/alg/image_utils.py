@@ -191,7 +191,7 @@ def focus2(im_series, shift_vec, depth=None, method=np.mean):
 
 	# mean = np.mean(res, axis=-1)
 	kwargs = {'axis': -1}
-	if method is np.mean:
+	if method is np.median:
 		kwargs['overwrite_input'] = True
 	out = method(res, **kwargs)
 
@@ -325,7 +325,7 @@ def calculate_motion2(im_series):
 	return r
 
 
-def calculate_motion3(im_series, scale=4):
+def calculate_motion3(im_series, scale=16):
 	"""
 	Returns a list of vectors of motion between each image. For k images, we will get k-1 2D vectors
 	:param im_series: n X m X {1, 3} X k Array - k frames of n X m images, where the images can be grayscale or 3 channels

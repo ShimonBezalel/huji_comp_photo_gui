@@ -37,6 +37,14 @@ def call_and_pickle(path, func, *args):
         res = func(*args)
     return res
 
+def wrap_motion(series, frames):
+    flow = calculate_motion3(series)
+    motion_vec = []
+    for frame_i in range(0, frames - 1):
+        motion_vec.append(np.median(flow[..., frame_i], axis=(1, 2)))
+    motion_vec = np.array(motion_vec)
+    return motion_vec
+
 
 class Gui:
 
@@ -64,12 +72,12 @@ class Gui:
         self._gui_live_result_height = height
         self._gui_live_result_width = width
         print("Calculating motion...")
-        self._motion_flow = call_and_pickle('flow_{}.pkl'.format(prefix), calculate_motion3, self._series)
-        self._motion_vec = []
-        for frame_i in range(0, self._frames - 1):
-            self._motion_vec.append(np.median(self._motion_flow[..., frame_i], axis=(1, 2)))
-        self._motion_vec = np.array(self._motion_vec)
-
+        # self._motion_flow = call_and_pickle('flow_{}.pkl'.format(prefix), calculate_motion3, self._series)
+        # self._motion_vec = []
+        # for frame_i in range(0, self._frames - 1):
+        #     self._motion_vec.append(np.median(self._motion_flow[..., frame_i], axis=(1, 2)))
+        # self._motion_vec = np.array(self._motion_vec)
+        self._motion_vec = call_and_pickle('flow_{}.pkl'.format(prefix), wrap_motion, self._series, self._frames)
         print("Aligning vertically...")
         self._aligned = call_and_pickle('aligned_{}.pkl'.format(prefix), self._align_images)
         # self._aligned_row_cols = call_and_pickle('aligned_row_cols_{}.pkl'.format(suffix), self._align_images, True, True)

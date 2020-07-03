@@ -325,8 +325,12 @@ async function request_upload_handler() {
                 const cols = json['cols'];
                 // const channels = json['channels'];
                 const frames = json['frames'];
-                $('#focus-radius-input-center').attr('max', frames);
-                $('#focus-radius-input-radius').attr('max', frames / 2);
+                const input_center = $('#focus-radius-input-center');
+                const input_rad = $('#focus-radius-input-center');
+                input_center.attr('max', frames);
+                input_center.val(frames / 2);
+                input_rad.attr('max', frames / 2);
+                input_rad.val(frames / 2);
                 $('#viewpoint-slice-input-start-frame').attr('max', frames - 1);
                 $('#viewpoint-slice-input-end-frame').attr('max', frames - 1);
                 $('#viewpoint-slice-input-start-column').attr('max', cols - 1);

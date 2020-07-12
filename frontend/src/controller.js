@@ -326,7 +326,7 @@ async function request_upload_handler() {
                 // const channels = json['channels'];
                 const frames = json['frames'];
                 const input_center = $('#focus-radius-input-center');
-                const input_rad = $('#focus-radius-input-center');
+                const input_rad = $('#focus-radius-input-radius');
                 input_center.attr('max', frames);
                 input_center.val(frames / 2);
                 input_rad.attr('max', frames / 2);

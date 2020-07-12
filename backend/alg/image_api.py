@@ -154,6 +154,8 @@ class Gui:
         rows, columns, channels, frames = self._series.shape
         start_frame, end_frame = max(0, center - radius), min(columns, center + radius)
         shift_factor = depth
+
+        normalized_depth = (depth * 2) - 1  # map from 0 to 1 => -1 to 1
         # shift_factor = self.get_motion_vec()[start_frame:end_frame, 1].mean() * depth
         self._last_result = focus2(self._aligned[..., start_frame: end_frame],
                                    shift_vec=self._motion_vec[start_frame: end_frame, 1] * depth)

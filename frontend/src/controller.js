@@ -327,10 +327,12 @@ async function request_upload_handler() {
                 const frames = json['frames'];
                 const input_center = $('#focus-radius-input-center');
                 const input_rad = $('#focus-radius-input-radius');
+                const half = Math.floor(frames / 2);
+
                 input_center.attr('max', frames);
-                input_center.val(frames / 2);
-                input_rad.attr('max', frames / 2);
-                input_rad.val(frames / 2);
+                input_center.val(half);
+                input_rad.attr('max', half);
+                input_rad.val(half);
                 $('#viewpoint-slice-input-start-frame').attr('max', frames - 1);
                 $('#viewpoint-slice-input-end-frame').attr('max', frames - 1);
                 $('#viewpoint-slice-input-start-column').attr('max', cols - 1);
